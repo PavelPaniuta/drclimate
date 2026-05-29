@@ -1,8 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { isOrderStatus, OrderStatusValue } from '@/lib/order-status';
 
-const statusColors: Record<string, string> = {
+const statusColors: Record<OrderStatusValue, string> = {
   CREATED: 'bg-slate-100 text-slate-700',
   PENDING: 'bg-amber-100 text-amber-800',
   ACCEPTED: 'bg-blue-100 text-blue-800',
@@ -13,9 +14,12 @@ const statusColors: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: string }) {
   const t = useTranslations('orderStatus');
+  const key = isOrderStatus(status) ? status : 'CREATED';
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[status] || statusColors.CREATED}`}>
-      {t(status as 'CREATED')}
+    <span
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[key]}`}
+    >
+      {isOrderStatus(status) ? t(status) : status}
     </span>
   );
 }

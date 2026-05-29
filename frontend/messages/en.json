@@ -189,6 +189,12 @@
     "COMPLETED": "Completed",
     "CANCELLED": "Cancelled"
   },
+  "orderAudit": {
+    "CREATED": "Request created",
+    "UPDATED": "Request updated",
+    "STATUS_CHANGED": "Status changed",
+    "ASSIGNED": "Technician assigned"
+  },
   "serviceType": {
     "AC_INSTALLATION": "AC installation",
     "AC_REPAIR": "AC repair",

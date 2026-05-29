@@ -11,6 +11,7 @@ import { City, findCityBySlug, getCityName } from '@/lib/cities';
 import { StatusBadge } from '@/components/StatusBadge';
 import { AdminOrderEditModal } from '@/components/admin/AdminOrderEditModal';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { ORDER_STATUS_SORT_ORDER } from '@/lib/order-status';
 
 interface AdminUser {
   id: string;
@@ -22,10 +23,9 @@ interface AdminUser {
   isBanned: boolean;
 }
 
-const STATUS_ORDER = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
-
 export default function AdminDashboard() {
   const t = useTranslations('admin');
+  const tStatus = useTranslations('orderStatus');
   const ts = useTranslations('serviceType');
   const ta = useTranslations('auth');
   const locale = useLocale();
@@ -83,7 +83,11 @@ export default function AdminDashboard() {
       groups[o.city].push(o);
     }
     for (const key of Object.keys(groups)) {
-      groups[key].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
+      groups[key].sort(
+        (a, b) =>
+          ORDER_STATUS_SORT_ORDER.indexOf(a.status as (typeof ORDER_STATUS_SORT_ORDER)[number]) -
+          ORDER_STATUS_SORT_ORDER.indexOf(b.status as (typeof ORDER_STATUS_SORT_ORDER)[number]),
+      );
     }
     return groups;
   }, [filteredOrders]);
@@ -136,9 +140,9 @@ export default function AdminDashboard() {
             </select>
             <select className="input w-auto text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">{t('allStatuses')}</option>
-              {STATUS_ORDER.map((s) => (
+              {ORDER_STATUS_SORT_ORDER.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {tStatus(s)}
                 </option>
               ))}
             </select>

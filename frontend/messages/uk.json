@@ -189,6 +189,12 @@
     "COMPLETED": "Завершено",
     "CANCELLED": "Скасовано"
   },
+  "orderAudit": {
+    "CREATED": "Заявку створено",
+    "UPDATED": "Заявку оновлено",
+    "STATUS_CHANGED": "Змінено статус",
+    "ASSIGNED": "Призначено майстра"
+  },
   "serviceType": {
     "AC_INSTALLATION": "Встановлення кондиціонера",
     "AC_REPAIR": "Ремонт кондиціонера",

@@ -6,8 +6,9 @@ import { api } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { Order, OrderAuditEntry } from '@/lib/types';
 import { StatusBadge } from '@/components/StatusBadge';
-
-const STATUSES = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as const;
+import { OrderStatusSelect } from '@/components/OrderStatusSelect';
+import { ORDER_STATUSES } from '@/lib/order-status';
+import { formatAuditEntrySummary } from '@/lib/format-audit-entry';
 
 type Props = {
   order: Order;
@@ -18,6 +19,8 @@ type Props = {
 export function AdminOrderEditModal({ order, onClose, onSaved }: Props) {
   const t = useTranslations('admin');
   const tc = useTranslations('client');
+  const tStatus = useTranslations('orderStatus');
+  const tAudit = useTranslations('orderAudit');
   const [address, setAddress] = useState(order.address);
   const [price, setPrice] = useState(order.price != null ? String(order.price) : '');
   const [status, setStatus] = useState(order.status);
@@ -87,13 +90,11 @@ export function AdminOrderEditModal({ order, onClose, onSaved }: Props) {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">{tc('status')}</label>
-            <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <OrderStatusSelect
+              value={status}
+              onChange={setStatus}
+              statuses={ORDER_STATUSES}
+            />
           </div>
           <div className="flex gap-2">
             <button type="submit" className="btn-primary flex-1" disabled={saving}>
@@ -111,7 +112,13 @@ export function AdminOrderEditModal({ order, onClose, onSaved }: Props) {
             {audit.length === 0 && <p>—</p>}
             {audit.map((entry) => (
               <div key={entry.id} className="rounded bg-slate-50 p-2">
-                <span className="font-medium">{entry.action}</span>
+                <span className="font-medium">
+                  {formatAuditEntrySummary(
+                    entry,
+                    (action) => tAudit(action as 'CREATED'),
+                    (s) => tStatus(s),
+                  )}
+                </span>
                 {' · '}
                 {entry.user.name || entry.user.email}
                 <br />
