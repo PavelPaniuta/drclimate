@@ -214,11 +214,13 @@ model OrderAuditLog {
 }
 
 model MasterChatThread {
-  id        String              @id @default(uuid())
-  masterId  String              @unique
-  master    User                @relation(fields: [masterId], references: [id], onDelete: Cascade)
-  messages  MasterChatMessage[]
-  updatedAt DateTime            @updatedAt
+  id               String              @id @default(uuid())
+  masterId         String              @unique
+  master           User                @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  messages         MasterChatMessage[]
+  adminLastReadAt  DateTime?
+  masterLastReadAt DateTime?
+  updatedAt        DateTime            @updatedAt
 
   @@index([updatedAt])
 }

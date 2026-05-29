@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
@@ -12,6 +12,8 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { CitySelect } from '@/components/CitySelect';
 import { AdminOrderEditModal } from '@/components/admin/AdminOrderEditModal';
 import { AdminMastersPanel } from '@/components/admin/AdminMastersPanel';
+import { ChatLauncherButton } from '@/components/chat/ChatLauncherButton';
+import { getSocket } from '@/lib/socket';
 
 interface AdminUser {
   id: string;
@@ -55,6 +57,18 @@ export default function AdminDashboard() {
   const [cityEdits, setCityEdits] = useState<Record<string, { nameUk: string; nameRu: string; nameEn: string }>>({});
   const [tab, setTab] = useState<AdminTab>('orders');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [chatUnread, setChatUnread] = useState(0);
+
+  const loadChatUnread = useCallback(async (token?: string) => {
+    const tkn = token ?? getToken();
+    if (!tkn) return;
+    try {
+      const data = await api<{ total: number }>('/admin/chat/unread', {}, tkn);
+      setChatUnread(data.total);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -64,7 +78,15 @@ export default function AdminDashboard() {
       return;
     }
     loadData(token);
-  }, [router]);
+    void loadChatUnread(token);
+
+    const socket = getSocket(token);
+    const onChat = () => void loadChatUnread(token);
+    socket.on('master_chat_message', onChat);
+    return () => {
+      socket.off('master_chat_message', onChat);
+    };
+  }, [router, loadChatUnread]);
 
   async function loadData(token: string) {
     const [u, o, c, cAll] = await Promise.all([
@@ -187,7 +209,15 @@ export default function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
-      <h1 className="mb-4 text-xl font-bold sm:mb-6 sm:text-2xl">{t('title')}</h1>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 sm:mb-6">
+        <h1 className="text-xl font-bold sm:text-2xl">{t('title')}</h1>
+        <ChatLauncherButton
+          label={t('openMastersChat')}
+          count={chatUnread}
+          active={tab === 'masters'}
+          onClick={() => setTab('masters')}
+        />
+      </div>
 
       <div className="mb-6 flex gap-1 overflow-x-auto border-b border-slate-200">
         {(['orders', 'masters'] as const).map((id) => (
@@ -196,18 +226,23 @@ export default function AdminDashboard() {
             type="button"
             onClick={() => setTab(id)}
             className={clsx(
-              'whitespace-nowrap px-4 py-2 text-sm font-medium',
+              'relative whitespace-nowrap px-4 py-2 text-sm font-medium',
               tab === id ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500',
             )}
           >
             {id === 'orders' ? t('orders') : t('masters')}
+            {id === 'masters' && chatUnread > 0 && tab !== 'masters' && (
+              <span className="absolute -right-0.5 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {chatUnread > 9 ? '9+' : chatUnread}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {tab === 'masters' && (
         <section className="mb-12">
-          <AdminMastersPanel cities={allCities} />
+          <AdminMastersPanel cities={allCities} onUnreadChange={setChatUnread} />
         </section>
       )}
 

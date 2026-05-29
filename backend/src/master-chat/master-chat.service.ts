@@ -27,6 +27,63 @@ export class MasterChatService {
     });
   }
 
+  private async countUnreadForAdmin(masterId: string) {
+    const thread = await this.prisma.masterChatThread.findUnique({ where: { masterId } });
+    if (!thread) return 0;
+    return this.prisma.masterChatMessage.count({
+      where: {
+        threadId: thread.id,
+        createdAt: { gt: thread.adminLastReadAt ?? new Date(0) },
+        sender: { role: Role.MASTER },
+      },
+    });
+  }
+
+  async getAdminUnreadSummary() {
+    const masters = await this.prisma.user.findMany({
+      where: { role: Role.MASTER, isBanned: false },
+      select: { id: true },
+    });
+    const byMaster: Record<string, number> = {};
+    let total = 0;
+    for (const m of masters) {
+      const count = await this.countUnreadForAdmin(m.id);
+      byMaster[m.id] = count;
+      total += count;
+    }
+    return { total, byMaster };
+  }
+
+  async getMasterUnreadCount(masterId: string) {
+    const thread = await this.prisma.masterChatThread.findUnique({ where: { masterId } });
+    if (!thread) return 0;
+    return this.prisma.masterChatMessage.count({
+      where: {
+        threadId: thread.id,
+        createdAt: { gt: thread.masterLastReadAt ?? new Date(0) },
+        sender: { role: Role.ADMIN },
+      },
+    });
+  }
+
+  async markAdminRead(masterId: string) {
+    const thread = await this.getOrCreateThread(masterId);
+    await this.prisma.masterChatThread.update({
+      where: { id: thread.id },
+      data: { adminLastReadAt: new Date() },
+    });
+    return { ok: true };
+  }
+
+  async markMasterRead(masterId: string) {
+    const thread = await this.getOrCreateThread(masterId);
+    await this.prisma.masterChatThread.update({
+      where: { id: thread.id },
+      data: { masterLastReadAt: new Date() },
+    });
+    return { ok: true };
+  }
+
   async listMastersForAdmin() {
     const masters = await this.prisma.user.findMany({
       where: { role: Role.MASTER, isBanned: false },
@@ -46,6 +103,7 @@ export class MasterChatService {
         masterChatThread: {
           select: {
             updatedAt: true,
+            adminLastReadAt: true,
             messages: {
               orderBy: { createdAt: 'desc' },
               take: 1,
@@ -69,7 +127,15 @@ export class MasterChatService {
       orderBy: { name: 'asc' },
     });
 
-    return masters.sort((a, b) => {
+    const withUnread = await Promise.all(
+      masters.map(async (m) => ({
+        ...m,
+        unreadCount: await this.countUnreadForAdmin(m.id),
+      })),
+    );
+
+    return withUnread.sort((a, b) => {
+      if (b.unreadCount !== a.unreadCount) return b.unreadCount - a.unreadCount;
       const aOnline = a.masterProfile?.isOnline ? 1 : 0;
       const bOnline = b.masterProfile?.isOnline ? 1 : 0;
       return bOnline - aOnline;
@@ -82,13 +148,21 @@ export class MasterChatService {
     }
 
     const thread = await this.getOrCreateThread(masterId);
-    return this.prisma.masterChatMessage.findMany({
+    const messages = await this.prisma.masterChatMessage.findMany({
       where: { threadId: thread.id },
       include: {
         sender: { select: { id: true, name: true, role: true, email: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
+
+    if (role === Role.ADMIN) {
+      await this.markAdminRead(masterId);
+    } else {
+      await this.markMasterRead(masterId);
+    }
+
+    return messages;
   }
 
   async sendMessage(

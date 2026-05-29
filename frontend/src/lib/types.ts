@@ -77,6 +77,7 @@ export interface MasterListItem {
     }>;
   };
   _count?: { masterOrders: number };
+  unreadCount?: number;
 }
 
 export interface MasterChatMessage {

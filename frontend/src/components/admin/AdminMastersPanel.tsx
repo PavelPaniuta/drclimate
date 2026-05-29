@@ -12,9 +12,10 @@ import { appendChatMessage, parseMasterChatPayload } from '@/lib/chat-messages';
 
 type Props = {
   cities: City[];
+  onUnreadChange?: (total: number) => void;
 };
 
-export function AdminMastersPanel({ cities }: Props) {
+export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
   const t = useTranslations('admin');
   const tc = useTranslations('common');
   const locale = useLocale();
@@ -24,20 +25,30 @@ export function AdminMastersPanel({ cities }: Props) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const notifyUnread = useCallback(
+    (list: MasterListItem[]) => {
+      const total = list.reduce((sum, m) => sum + (m.unreadCount ?? 0), 0);
+      onUnreadChange?.(total);
+    },
+    [onUnreadChange],
+  );
+
   const loadMasters = useCallback(async () => {
     const token = getToken();
     if (!token) return;
     const data = await api<MasterListItem[]>('/admin/masters', {}, token);
     setMasters(data);
+    notifyUnread(data);
     setLoading(false);
-  }, []);
+  }, [notifyUnread]);
 
   const loadChat = useCallback(async (masterId: string) => {
     const token = getToken();
     if (!token) return;
     const data = await api<MasterChatMessage[]>(`/admin/masters/${masterId}/chat`, {}, token);
     setMessages(data);
-  }, []);
+    await loadMasters();
+  }, [loadMasters]);
 
   useEffect(() => {
     void loadMasters();
@@ -92,6 +103,7 @@ export function AdminMastersPanel({ cities }: Props) {
         <ul className="divide-y divide-slate-100">
           {masters.map((m) => {
             const last = m.masterChatThread?.messages[0];
+            const unread = m.unreadCount ?? 0;
             return (
               <li key={m.id}>
                 <button
@@ -104,21 +116,30 @@ export function AdminMastersPanel({ cities }: Props) {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{m.name || m.email}</span>
-                    <span
-                      className={clsx(
-                        'rounded-full px-2 py-0.5 text-xs',
-                        m.masterProfile?.isOnline ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600',
+                    <div className="flex items-center gap-2">
+                      {unread > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                          {unread > 99 ? '99+' : unread}
+                        </span>
                       )}
-                    >
-                      {m.masterProfile?.isOnline ? tc('online') : tc('offline')}
-                    </span>
+                      <span
+                        className={clsx(
+                          'rounded-full px-2 py-0.5 text-xs',
+                          m.masterProfile?.isOnline ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600',
+                        )}
+                      >
+                        {m.masterProfile?.isOnline ? tc('online') : tc('offline')}
+                      </span>
+                    </div>
                   </div>
                   <span className="text-xs text-slate-500">
                     {getCityName(findCityBySlug(cities, m.masterProfile?.serviceArea), m.masterProfile?.serviceArea, locale)}
                     {m._count?.masterOrders ? ` · ${m._count.masterOrders} ${t('activeJobs')}` : ''}
                   </span>
                   {last && (
-                    <span className="truncate text-xs text-slate-400">{last.content}</span>
+                    <span className={clsx('truncate text-xs', unread > 0 ? 'font-medium text-brand-700' : 'text-slate-400')}>
+                      {last.content}
+                    </span>
                   )}
                 </button>
               </li>

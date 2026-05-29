@@ -14,7 +14,10 @@ import { MasterWorkSettings } from '@/components/master/MasterWorkSettings';
 import { MasterOrderCard } from '@/components/master/MasterOrderCard';
 import { MasterOrderDetail } from '@/components/master/MasterOrderDetail';
 import { MasterAdminChat } from '@/components/master/MasterAdminChat';
+import { ChatLauncherButton } from '@/components/chat/ChatLauncherButton';
 import { PwaRegister } from '@/components/PwaRegister';
+import { parseMasterChatPayload } from '@/lib/chat-messages';
+import { MasterChatMessage } from '@/lib/types';
 import { useMasterNotifications } from '@/hooks/useMasterNotifications';
 
 function orderWorkDate(order: Order): Date {
@@ -49,6 +52,19 @@ export default function MasterDashboard() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+
+  const loadChatUnread = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const data = await api<{ count: number }>('/masters/admin-chat/unread', {}, token);
+      setChatUnread(data.count);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     const token = getToken();
@@ -76,16 +92,24 @@ export default function MasterDashboard() {
     }
 
     loadData();
+    void loadChatUnread();
 
     const socket = getSocket(token);
     socket.on('order_update', loadData);
     socket.on('order_accepted', loadData);
+    socket.on('master_chat_message', (payload: MasterChatMessage | { message?: MasterChatMessage }) => {
+      const msg = parseMasterChatPayload(payload);
+      if (msg?.sender.role === 'ADMIN' && !chatOpen) {
+        void loadChatUnread();
+      }
+    });
 
     return () => {
       socket.off('order_update');
       socket.off('order_accepted');
+      socket.off('master_chat_message');
     };
-  }, [router, loadData]);
+  }, [router, loadData, loadChatUnread, chatOpen]);
 
   async function toggleOnline() {
     const token = getToken();
@@ -170,18 +194,32 @@ export default function MasterDashboard() {
           <h1 className="text-xl font-bold sm:text-2xl">{t('title')}</h1>
           <p className="hidden text-sm text-slate-500 sm:block">{t('workboardSubtitle')}</p>
         </div>
-        <button
-          type="button"
-          onClick={toggleOnline}
-          className={clsx(
-            'rounded-full px-4 py-2 text-sm font-medium transition',
-            board.profile.isOnline ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600',
-          )}
-        >
-          {board.profile.isOnline ? '🟢 ' : '⚫ '}
-          {board.profile.isOnline ? tc('online') : tc('offline')}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ChatLauncherButton
+            label={t('adminChat')}
+            count={chatUnread}
+            active={chatOpen}
+            onClick={() => setChatOpen(true)}
+          />
+          <button
+            type="button"
+            onClick={toggleOnline}
+            className={clsx(
+              'rounded-full px-4 py-2 text-sm font-medium transition',
+              board.profile.isOnline ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600',
+            )}
+          >
+            {board.profile.isOnline ? '🟢 ' : '⚫ '}
+            {board.profile.isOnline ? tc('online') : tc('offline')}
+          </button>
+        </div>
       </div>
+
+      <MasterAdminChat
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        onUnreadChange={loadChatUnread}
+      />
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
@@ -229,10 +267,7 @@ export default function MasterDashboard() {
             onOpenOrder={setOpenOrderId}
           />
         </div>
-        <div className="space-y-4">
-          <MasterWorkSettings profile={board.profile} onSaved={loadData} />
-          <MasterAdminChat />
-        </div>
+        <MasterWorkSettings profile={board.profile} onSaved={loadData} />
       </div>
 
       <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 pb-px">

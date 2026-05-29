@@ -165,7 +165,8 @@
     "mastersHint": "Online status and direct chat",
     "activeJobs": "active",
     "selectMasterChat": "Select a technician to chat",
-    "chatPlaceholder": "Message..."
+    "chatPlaceholder": "Message...",
+    "openMastersChat": "Technician chat"
   },
   "orderStatus": {
     "CREATED": "Created",

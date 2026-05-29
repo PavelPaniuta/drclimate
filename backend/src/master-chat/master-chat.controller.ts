@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Role } from '@prisma/client';
 import { MasterChatService } from './master-chat.service';
@@ -12,10 +12,22 @@ import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decor
 export class MasterChatController {
   constructor(private masterChatService: MasterChatService) {}
 
+  @Get('admin/chat/unread')
+  @Roles(Role.ADMIN)
+  adminUnreadSummary() {
+    return this.masterChatService.getAdminUnreadSummary();
+  }
+
   @Get('admin/masters')
   @Roles(Role.ADMIN)
   listMasters() {
     return this.masterChatService.listMastersForAdmin();
+  }
+
+  @Patch('admin/masters/:masterId/chat/read')
+  @Roles(Role.ADMIN)
+  markAdminRead(@Param('masterId') masterId: string) {
+    return this.masterChatService.markAdminRead(masterId);
   }
 
   @Get('admin/masters/:masterId/chat')
@@ -34,10 +46,22 @@ export class MasterChatController {
     return this.masterChatService.sendMessage(masterId, user.sub, Role.ADMIN, dto);
   }
 
+  @Get('masters/admin-chat/unread')
+  @Roles(Role.MASTER)
+  masterUnread(@CurrentUser() user: JwtPayload) {
+    return this.masterChatService.getMasterUnreadCount(user.sub).then((count) => ({ count }));
+  }
+
   @Get('masters/admin-chat')
   @Roles(Role.MASTER)
   getMessagesAsMaster(@CurrentUser() user: JwtPayload) {
     return this.masterChatService.getMessages(user.sub, user.sub, Role.MASTER);
+  }
+
+  @Patch('masters/admin-chat/read')
+  @Roles(Role.MASTER)
+  markMasterRead(@CurrentUser() user: JwtPayload) {
+    return this.masterChatService.markMasterRead(user.sub);
   }
 
   @Post('masters/admin-chat')

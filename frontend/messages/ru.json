@@ -165,7 +165,8 @@
     "mastersHint": "Онлайн-статус и чат с мастером",
     "activeJobs": "активных",
     "selectMasterChat": "Выберите мастера для чата",
-    "chatPlaceholder": "Сообщение..."
+    "chatPlaceholder": "Сообщение...",
+    "openMastersChat": "Чат с мастерами"
   },
   "orderStatus": {
     "CREATED": "Создано",
