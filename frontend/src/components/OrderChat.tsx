@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import clsx from 'clsx';
 import { api } from '@/lib/api';
-import { getToken, getStoredUser } from '@/lib/auth';
+import { getToken } from '@/lib/auth';
 import { getSocket } from '@/lib/socket';
 import { Message } from '@/lib/types';
 import { appendOrderMessage } from '@/lib/order-chat-messages';
+import { isOwnChatMessage } from '@/lib/chat-own-message';
 
 type Props = {
   orderId: string;
@@ -21,25 +22,28 @@ export function OrderChat({ orderId, onUnreadChange }: Props) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [newIncomingIds, setNewIncomingIds] = useState<Set<string>>(new Set());
-  const user = getStoredUser();
+  const onUnreadRef = useRef(onUnreadChange);
+  onUnreadRef.current = onUnreadChange;
 
-  const loadMessages = useCallback(async () => {
+  const loadMessages = useCallback(async (showSpinner = false) => {
     const token = getToken();
     if (!token) return;
-    setLoading(true);
+    if (showSpinner) setLoading(true);
     try {
       const data = await api<Message[]>(`/orders/${orderId}/messages`, {}, token);
       setMessages(data);
       setNewIncomingIds(new Set());
-      onUnreadChange?.();
+      onUnreadRef.current?.();
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
-  }, [orderId, onUnreadChange]);
+  }, [orderId]);
 
   useEffect(() => {
-    void loadMessages();
+    void loadMessages(true);
+  }, [orderId, loadMessages]);
 
+  useEffect(() => {
     const token = getToken();
     if (!token) return;
 
@@ -49,9 +53,9 @@ export function OrderChat({ orderId, onUnreadChange }: Props) {
     const onMessage = (msg: Message) => {
       if (!msg?.id) return;
       setMessages((prev) => appendOrderMessage(prev, msg));
-      if (msg.sender.id !== user?.id) {
+      if (!isOwnChatMessage(msg.sender?.id)) {
         setNewIncomingIds((prev) => new Set(prev).add(msg.id));
-        onUnreadChange?.();
+        onUnreadRef.current?.();
       }
     };
 
@@ -59,7 +63,7 @@ export function OrderChat({ orderId, onUnreadChange }: Props) {
     return () => {
       socket.off('new_message', onMessage);
     };
-  }, [orderId, loadMessages, onUnreadChange, user?.id]);
+  }, [orderId]);
 
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
@@ -73,6 +77,7 @@ export function OrderChat({ orderId, onUnreadChange }: Props) {
     );
     setMessages((prev) => appendOrderMessage(prev, msg));
     setContent('');
+    onUnreadRef.current?.();
   }
 
   if (loading) return <p className="text-sm text-slate-500">{t('chat')}...</p>;
@@ -83,7 +88,7 @@ export function OrderChat({ orderId, onUnreadChange }: Props) {
       <div className="mb-3 max-h-48 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-3">
         {messages.length === 0 && <p className="text-sm text-slate-400">—</p>}
         {messages.map((m) => {
-          const isOwn = m.sender.id === user?.id;
+          const isOwn = isOwnChatMessage(m.sender.id);
           const isNew = newIncomingIds.has(m.id);
           return (
             <div

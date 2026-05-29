@@ -197,6 +197,12 @@ export class MasterChatService {
       data: { updatedAt: new Date() },
     });
 
+    if (role === Role.ADMIN) {
+      await this.markAdminRead(masterId);
+    } else if (role === Role.MASTER && senderId === masterId) {
+      await this.markMasterRead(masterId);
+    }
+
     this.events.emitMasterChatMessage(masterId, message);
     void this.events.emitChatUnread(masterId);
     return message;

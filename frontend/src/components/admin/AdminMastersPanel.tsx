@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import clsx from 'clsx';
 import { api } from '@/lib/api';
@@ -9,6 +9,7 @@ import { getCityName, findCityBySlug, City } from '@/lib/cities';
 import { MasterChatMessage, MasterListItem } from '@/lib/types';
 import { getSocket } from '@/lib/socket';
 import { appendChatMessage, parseMasterChatPayload } from '@/lib/chat-messages';
+import { isOwnChatMessage } from '@/lib/chat-own-message';
 
 type Props = {
   cities: City[];
@@ -25,27 +26,28 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [newIncomingIds, setNewIncomingIds] = useState<Set<string>>(new Set());
+  const selectedIdRef = useRef(selectedId);
+  const onUnreadRef = useRef(onUnreadChange);
+  selectedIdRef.current = selectedId;
+  onUnreadRef.current = onUnreadChange;
 
   const loadMasters = useCallback(async () => {
     const token = getToken();
     if (!token) return;
     const data = await api<MasterListItem[]>('/admin/masters', {}, token);
     setMasters(data);
-    onUnreadChange?.();
+    onUnreadRef.current?.();
     setLoading(false);
-  }, [onUnreadChange]);
+  }, []);
 
-  const loadChat = useCallback(
-    async (masterId: string) => {
-      const token = getToken();
-      if (!token) return;
-      const data = await api<MasterChatMessage[]>(`/admin/masters/${masterId}/chat`, {}, token);
-      setMessages(data);
-      setNewIncomingIds(new Set());
-      await loadMasters();
-    },
-    [loadMasters],
-  );
+  const loadChat = useCallback(async (masterId: string) => {
+    const token = getToken();
+    if (!token) return;
+    const data = await api<MasterChatMessage[]>(`/admin/masters/${masterId}/chat`, {}, token);
+    setMessages(data);
+    setNewIncomingIds(new Set());
+    await loadMasters();
+  }, [loadMasters]);
 
   useEffect(() => {
     void loadMasters();
@@ -54,19 +56,20 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
 
     const socket = getSocket(token);
     const onChat = (payload: { masterId?: string; message?: MasterChatMessage } | MasterChatMessage) => {
-      const eventMasterId = 'masterId' in payload && payload.masterId ? payload.masterId : selectedId;
+      const eventMasterId =
+        'masterId' in payload && payload.masterId ? payload.masterId : selectedIdRef.current;
       const message = parseMasterChatPayload(payload);
       if (!message) {
         void loadMasters();
         return;
       }
-      if (message.sender.role === 'MASTER') {
-        if (eventMasterId === selectedId) {
-          setMessages((prev) => appendChatMessage(prev, message));
+      if (eventMasterId === selectedIdRef.current) {
+        setMessages((prev) => appendChatMessage(prev, message));
+        if (!isOwnChatMessage(message.sender?.id)) {
           setNewIncomingIds((prev) => new Set(prev).add(message.id));
         }
-        void loadMasters();
       }
+      void loadMasters();
     };
     const onUnread = () => void loadMasters();
     socket.on('master_chat_message', onChat);
@@ -75,7 +78,7 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
       socket.off('master_chat_message', onChat);
       socket.off('chat_unread', onUnread);
     };
-  }, [loadMasters, selectedId]);
+  }, [loadMasters]);
 
   useEffect(() => {
     if (selectedId) void loadChat(selectedId);
@@ -97,6 +100,7 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
     );
     setMessages((prev) => appendChatMessage(prev, msg));
     setContent('');
+    onUnreadRef.current?.();
   }
 
   const selected = masters.find((m) => m.id === selectedId);
@@ -128,7 +132,7 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
                     <span className={clsx('font-medium', unread > 0 && 'text-brand-800')}>{m.name || m.email}</span>
                     <div className="flex items-center gap-2">
                       {unread > 0 && (
-                        <span className="flex h-5 min-w-5 animate-pulse items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
                           {unread > 99 ? '99+' : unread}
                         </span>
                       )}
@@ -171,19 +175,19 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
               {messages.length === 0 && <p className="text-sm text-slate-400">—</p>}
               {messages.map((msg) => {
                 const isNew = newIncomingIds.has(msg.id);
-                const fromMaster = msg.sender.role === 'MASTER';
+                const isOwn = isOwnChatMessage(msg.sender.id);
                 return (
                   <div
                     key={msg.id}
                     className={clsx(
                       'max-w-[85%] rounded-lg px-3 py-2 text-sm',
-                      fromMaster ? 'bg-white text-slate-800' : 'ml-auto bg-brand-100 text-brand-900',
-                      isNew && fromMaster && 'ring-2 ring-red-400 ring-offset-1',
+                      isOwn ? 'ml-auto bg-brand-100 text-brand-900' : 'bg-white text-slate-800',
+                      isNew && !isOwn && 'ring-2 ring-red-400 ring-offset-1',
                     )}
                   >
                     <div className="mb-0.5 flex items-center gap-2">
                       <span className="text-xs font-medium opacity-70">{msg.sender.name || msg.sender.role}</span>
-                      {isNew && fromMaster && (
+                      {isNew && !isOwn && (
                         <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
                           {t('newMessage')}
                         </span>

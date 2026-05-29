@@ -12,7 +12,6 @@ import {
 import { api } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { getSocket } from '@/lib/socket';
-import { parseMasterChatPayload } from '@/lib/chat-messages';
 
 type AdminChatUnreadContextValue = {
   total: number;
@@ -41,24 +40,12 @@ export function AdminChatUnreadProvider({ children }: { children: ReactNode }) {
     if (!token) return;
 
     const socket = getSocket(token);
-
-    const onMessage = (payload: unknown) => {
-      const msg = parseMasterChatPayload(
-        payload as Parameters<typeof parseMasterChatPayload>[0],
-      );
-      if (msg?.sender.role === 'MASTER') {
-        setTotal((n) => n + 1);
-      }
-      void refresh();
-    };
-
     const onUnread = () => void refresh();
 
     const onVisible = () => {
       if (document.visibilityState === 'visible') void refresh();
     };
 
-    socket.on('master_chat_message', onMessage);
     socket.on('chat_unread', onUnread);
     window.addEventListener('focus', onUnread);
     document.addEventListener('visibilitychange', onVisible);
@@ -66,7 +53,6 @@ export function AdminChatUnreadProvider({ children }: { children: ReactNode }) {
     const interval = setInterval(() => void refresh(), 8000);
 
     return () => {
-      socket.off('master_chat_message', onMessage);
       socket.off('chat_unread', onUnread);
       window.removeEventListener('focus', onUnread);
       document.removeEventListener('visibilitychange', onVisible);

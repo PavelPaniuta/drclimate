@@ -53,12 +53,12 @@ export default function MasterDashboard() {
   const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
-  const { count: chatUnread, refresh: refreshChatUnread } = useMasterChatUnread(true, chatOpen);
+  const { count: chatUnread, refresh: refreshChatUnread } = useMasterChatUnread(true);
   const {
     total: orderChatUnread,
     byOrder: orderChatByOrder,
     refresh: refreshOrderChatUnread,
-  } = useMasterOrderChatUnread(true, openOrderId);
+  } = useMasterOrderChatUnread(true);
 
   const loadData = useCallback(async () => {
     const token = getToken();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import clsx from 'clsx';
 import { api } from '@/lib/api';
@@ -8,6 +8,7 @@ import { getToken } from '@/lib/auth';
 import { MasterChatMessage } from '@/lib/types';
 import { getSocket } from '@/lib/socket';
 import { appendChatMessage, parseMasterChatPayload } from '@/lib/chat-messages';
+import { isOwnChatMessage } from '@/lib/chat-own-message';
 
 type Props = {
   open: boolean;
@@ -22,24 +23,26 @@ export function MasterAdminChat({ open, onClose, onUnreadChange }: Props) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [newIncomingIds, setNewIncomingIds] = useState<Set<string>>(new Set());
+  const onUnreadRef = useRef(onUnreadChange);
+  onUnreadRef.current = onUnreadChange;
 
-  const loadMessages = useCallback(async () => {
+  const loadMessages = useCallback(async (showSpinner = false) => {
     const token = getToken();
     if (!token) return;
-    setLoading(true);
+    if (showSpinner) setLoading(true);
     try {
       const data = await api<MasterChatMessage[]>('/masters/admin-chat', {}, token);
       setMessages(data);
       setNewIncomingIds(new Set());
-      onUnreadChange?.();
+      onUnreadRef.current?.();
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
-  }, [onUnreadChange]);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
-    void loadMessages();
+    void loadMessages(true);
 
     const token = getToken();
     if (!token) return;
@@ -48,20 +51,18 @@ export function MasterAdminChat({ open, onClose, onUnreadChange }: Props) {
     const onChat = (payload: MasterChatMessage | { message?: MasterChatMessage }) => {
       const msg = parseMasterChatPayload(payload);
       if (!msg) return;
-      if (msg.sender.role === 'ADMIN') {
-        setMessages((prev) => appendChatMessage(prev, msg));
+      setMessages((prev) => appendChatMessage(prev, msg));
+      if (!isOwnChatMessage(msg.sender?.id)) {
         setNewIncomingIds((prev) => new Set(prev).add(msg.id));
-        onUnreadChange?.();
+        onUnreadRef.current?.();
       }
     };
-    const onUnread = () => onUnreadChange?.();
+
     socket.on('master_chat_message', onChat);
-    socket.on('chat_unread', onUnread);
     return () => {
       socket.off('master_chat_message', onChat);
-      socket.off('chat_unread', onUnread);
     };
-  }, [open, loadMessages, onUnreadChange]);
+  }, [open, loadMessages]);
 
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
@@ -75,6 +76,7 @@ export function MasterAdminChat({ open, onClose, onUnreadChange }: Props) {
     );
     setMessages((prev) => appendChatMessage(prev, msg));
     setContent('');
+    onUnreadRef.current?.();
   }
 
   if (!open) return null;
@@ -95,20 +97,21 @@ export function MasterAdminChat({ open, onClose, onUnreadChange }: Props) {
           {messages.map((msg) => {
             const isNew = newIncomingIds.has(msg.id);
             const fromAdmin = msg.sender.role === 'ADMIN';
+            const isOwn = isOwnChatMessage(msg.sender.id);
             return (
               <div
                 key={msg.id}
                 className={clsx(
                   'max-w-[85%] rounded-lg px-3 py-2 text-sm',
-                  fromAdmin ? 'mr-4 bg-slate-100 text-slate-800' : 'ml-auto bg-brand-100 text-brand-900',
-                  isNew && fromAdmin && 'ring-2 ring-red-400 ring-offset-1',
+                  isOwn ? 'ml-auto bg-brand-100 text-brand-900' : 'mr-4 bg-slate-100 text-slate-800',
+                  isNew && !isOwn && 'ring-2 ring-red-400 ring-offset-1',
                 )}
               >
                 <div className="mb-0.5 flex items-center gap-2">
                   <span className="text-xs font-medium text-slate-500">
-                    {fromAdmin ? t('adminLabel') : t('youLabel')}
+                    {isOwn ? t('youLabel') : fromAdmin ? t('adminLabel') : msg.sender.role}
                   </span>
-                  {isNew && fromAdmin && (
+                  {isNew && !isOwn && (
                     <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
                       {t('newMessage')}
                     </span>

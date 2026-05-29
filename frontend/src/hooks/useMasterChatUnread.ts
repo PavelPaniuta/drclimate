@@ -4,9 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { getSocket } from '@/lib/socket';
-import { parseMasterChatPayload } from '@/lib/chat-messages';
 
-export function useMasterChatUnread(enabled = true, chatOpen = false) {
+export function useMasterChatUnread(enabled = true) {
   const [count, setCount] = useState(0);
 
   const refresh = useCallback(async () => {
@@ -28,28 +27,12 @@ export function useMasterChatUnread(enabled = true, chatOpen = false) {
     if (!token) return;
 
     const socket = getSocket(token);
-
-    const onMessage = (payload: unknown) => {
-      if (chatOpen) {
-        void refresh();
-        return;
-      }
-      const msg = parseMasterChatPayload(
-        payload as Parameters<typeof parseMasterChatPayload>[0],
-      );
-      if (msg?.sender.role === 'ADMIN') {
-        setCount((n) => n + 1);
-      }
-      void refresh();
-    };
-
     const onUnread = () => void refresh();
 
     const onVisible = () => {
       if (document.visibilityState === 'visible') void refresh();
     };
 
-    socket.on('master_chat_message', onMessage);
     socket.on('chat_unread', onUnread);
     window.addEventListener('focus', onUnread);
     document.addEventListener('visibilitychange', onVisible);
@@ -57,13 +40,12 @@ export function useMasterChatUnread(enabled = true, chatOpen = false) {
     const interval = setInterval(() => void refresh(), 8000);
 
     return () => {
-      socket.off('master_chat_message', onMessage);
       socket.off('chat_unread', onUnread);
       window.removeEventListener('focus', onUnread);
       document.removeEventListener('visibilitychange', onVisible);
       clearInterval(interval);
     };
-  }, [enabled, chatOpen, refresh]);
+  }, [enabled, refresh]);
 
   return { count, refresh };
 }

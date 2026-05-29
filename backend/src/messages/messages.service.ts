@@ -119,6 +119,12 @@ export class MessagesService {
       include: { sender: { select: { id: true, name: true, role: true } } },
     });
 
+    if (role === Role.CLIENT && order.clientId === senderId) {
+      await this.markClientRead(orderId);
+    } else if (role === Role.MASTER && order.masterId === senderId) {
+      await this.markMasterRead(orderId);
+    }
+
     this.events.emitNewMessage(orderId, message);
     void this.events.emitOrderChatUnread(orderId, order.clientId, order.masterId);
     return message;
