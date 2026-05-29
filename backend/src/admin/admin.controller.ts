@@ -4,7 +4,8 @@ import { Role } from '@prisma/client';
 import { AdminService } from './admin.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { AdminCreateOrderDto } from '../orders/dto/order.dto';
+import { AdminCreateOrderDto, AdminUpdateOrderDto } from '../orders/dto/order.dto';
+import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -23,8 +24,22 @@ export class AdminController {
   }
 
   @Post('orders')
-  createOrder(@Body() dto: AdminCreateOrderDto) {
-    return this.adminService.createOrder(dto);
+  createOrder(@Body() dto: AdminCreateOrderDto, @CurrentUser() user: JwtPayload) {
+    return this.adminService.createOrder(dto, user.sub);
+  }
+
+  @Patch('orders/:id')
+  updateOrder(
+    @Param('id') id: string,
+    @Body() dto: AdminUpdateOrderDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.adminService.updateOrder(id, user.sub, dto);
+  }
+
+  @Get('orders/:id/audit')
+  getOrderAudit(@Param('id') id: string) {
+    return this.adminService.getOrderAudit(id);
   }
 
   @Patch('users/:id/ban')

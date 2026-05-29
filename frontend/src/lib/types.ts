@@ -48,6 +48,44 @@ export interface Message {
   sender: { id: string; name?: string; role: string };
 }
 
+export interface OrderAuditEntry {
+  id: string;
+  action: string;
+  details?: Record<string, unknown> | null;
+  createdAt: string;
+  user: { id: string; name?: string; email: string; role: string };
+}
+
+export interface MasterListItem {
+  id: string;
+  email: string;
+  name?: string;
+  phone?: string;
+  city?: string;
+  masterProfile?: {
+    isOnline: boolean;
+    serviceArea: string;
+    totalEarnings: string | number;
+  };
+  masterChatThread?: {
+    updatedAt: string;
+    messages: Array<{
+      id: string;
+      content: string;
+      createdAt: string;
+      sender: { id: string; name?: string; role: string };
+    }>;
+  };
+  _count?: { masterOrders: number };
+}
+
+export interface MasterChatMessage {
+  id: string;
+  content: string;
+  createdAt: string;
+  sender: { id: string; name?: string; role: string; email?: string };
+}
+
 export interface MasterProfile {
   id: string;
   skills: string[];

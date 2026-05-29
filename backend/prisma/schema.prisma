@@ -35,6 +35,13 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum OrderAuditAction {
+  CREATED
+  UPDATED
+  STATUS_CHANGED
+  ASSIGNED
+}
+
 model City {
   id        String   @id @default(uuid())
   slug      String   @unique
@@ -60,12 +67,15 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  masterProfile MasterProfile?
-  clientOrders  ServiceRequest[] @relation("ClientOrders")
-  masterOrders  ServiceRequest[] @relation("MasterOrders")
-  sentMessages  Message[]
-  orderComments OrderComment[]
-  ratingsGiven  Rating[]         @relation("RatingsGiven")
+  masterProfile      MasterProfile?
+  clientOrders       ServiceRequest[]   @relation("ClientOrders")
+  masterOrders       ServiceRequest[]   @relation("MasterOrders")
+  sentMessages       Message[]
+  orderComments      OrderComment[]
+  ratingsGiven       Rating[]           @relation("RatingsGiven")
+  orderAuditLogs     OrderAuditLog[]
+  masterChatThread   MasterChatThread?
+  masterChatMessages MasterChatMessage[]
 
   @@index([role, city])
 }
@@ -111,6 +121,7 @@ model ServiceRequest {
   comments   OrderComment[]
   rating     Rating?
   settlement OrderSettlement?
+  auditLogs  OrderAuditLog[]
 
   @@index([city, status])
   @@index([masterId, status])
@@ -187,4 +198,39 @@ model Rating {
   score     Int
   comment   String?
   createdAt DateTime       @default(now())
+}
+
+model OrderAuditLog {
+  id        String           @id @default(uuid())
+  orderId   String
+  order     ServiceRequest   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  action    OrderAuditAction
+  details   Json?
+  createdAt DateTime         @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model MasterChatThread {
+  id        String              @id @default(uuid())
+  masterId  String              @unique
+  master    User                @relation(fields: [masterId], references: [id], onDelete: Cascade)
+  messages  MasterChatMessage[]
+  updatedAt DateTime            @updatedAt
+
+  @@index([updatedAt])
+}
+
+model MasterChatMessage {
+  id        String           @id @default(uuid())
+  threadId  String
+  thread    MasterChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User             @relation(fields: [senderId], references: [id])
+  content   String
+  createdAt DateTime         @default(now())
+
+  @@index([threadId, createdAt])
 }

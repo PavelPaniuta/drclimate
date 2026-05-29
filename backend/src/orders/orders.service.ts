@@ -5,11 +5,20 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { OrderStatus, Role } from '@prisma/client';
+import { OrderAuditAction, OrderStatus, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchingService } from '../matching/matching.service';
 import { EventsGateway } from '../events/events.gateway';
-import { CreateOrderDto, UpdateOrderStatusDto, ScheduleOrderDto, UpdateMasterNotesDto, CreateOrderCommentDto, CompleteOrderDto } from './dto/order.dto';
+import {
+  CreateOrderDto,
+  UpdateOrderStatusDto,
+  ScheduleOrderDto,
+  UpdateMasterNotesDto,
+  CreateOrderCommentDto,
+  CompleteOrderDto,
+  AdminUpdateOrderDto,
+} from './dto/order.dto';
+import { OrderAuditService } from './order-audit.service';
 import { calculateSettlementTotals, roundMoney } from './settlement.utils';
 import { MastersService } from '../masters/masters.service';
 import { CitiesService } from '../cities/cities.service';
@@ -34,9 +43,10 @@ export class OrdersService {
     private events: EventsGateway,
     private mastersService: MastersService,
     private citiesService: CitiesService,
+    private audit: OrderAuditService,
   ) {}
 
-  async create(clientId: string, dto: CreateOrderDto) {
+  async create(clientId: string, dto: CreateOrderDto, actorId?: string) {
     const client = await this.prisma.user.findUnique({ where: { id: clientId } });
     if (!client || client.role !== Role.CLIENT) {
       throw new BadRequestException('Invalid client');
@@ -64,6 +74,11 @@ export class OrdersService {
 
     await this.matching.broadcastToMasters(pending);
     this.events.emitOrderUpdate(pending);
+    await this.audit.log(pending.id, actorId ?? clientId, OrderAuditAction.CREATED, {
+      serviceType: pending.serviceType,
+      city: pending.city,
+      price: pending.price ? Number(pending.price) : null,
+    });
     this.logger.log(`Order ${pending.id} created and broadcast to all masters`);
 
     return pending;
@@ -169,8 +184,59 @@ export class OrdersService {
 
     this.events.emitOrderAccepted(result);
     this.events.emitOrderUpdate(result);
+    await this.audit.log(orderId, masterId, OrderAuditAction.ASSIGNED, { masterId });
     this.logger.log(`Order ${orderId} accepted by master ${masterId}`);
     return result;
+  }
+
+  async adminUpdate(orderId: string, adminId: string, dto: AdminUpdateOrderDto) {
+    const order = await this.prisma.serviceRequest.findUnique({
+      where: { id: orderId },
+      include: { settlement: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const changes: Record<string, { from: unknown; to: unknown }> = {};
+    const data: {
+      address?: string;
+      price?: number;
+      status?: OrderStatus;
+    } = {};
+
+    if (dto.address !== undefined && dto.address !== order.address) {
+      changes.address = { from: order.address, to: dto.address };
+      data.address = dto.address;
+    }
+    if (dto.price !== undefined && Number(order.price ?? 0) !== dto.price) {
+      changes.price = { from: order.price ? Number(order.price) : null, to: dto.price };
+      data.price = dto.price;
+    }
+    if (dto.status !== undefined && dto.status !== order.status) {
+      changes.status = { from: order.status, to: dto.status };
+      data.status = dto.status;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return this.prisma.serviceRequest.findUnique({
+        where: { id: orderId },
+        include: this.orderIncludes(),
+      });
+    }
+
+    const updated = await this.prisma.serviceRequest.update({
+      where: { id: orderId },
+      data,
+      include: this.orderIncludes(),
+    });
+
+    const action =
+      dto.status !== undefined && dto.status !== order.status
+        ? OrderAuditAction.STATUS_CHANGED
+        : OrderAuditAction.UPDATED;
+
+    await this.audit.log(orderId, adminId, action, { changes } as Prisma.InputJsonValue);
+    this.events.emitOrderUpdate(updated);
+    return updated;
   }
 
   async scheduleOrder(orderId: string, masterId: string, dto: ScheduleOrderDto) {
@@ -271,6 +337,11 @@ export class OrdersService {
       include: this.orderIncludes(),
     });
 
+    await this.audit.log(orderId, userId, OrderAuditAction.STATUS_CHANGED, {
+      from: order.status,
+      to: dto.status,
+      ...(dto.price !== undefined ? { price: dto.price } : {}),
+    });
     this.events.emitOrderUpdate(updated);
     return updated;
   }
@@ -344,6 +415,11 @@ export class OrdersService {
       return { ...result, settlement };
     });
 
+    await this.audit.log(orderId, masterId, OrderAuditAction.STATUS_CHANGED, {
+      from: OrderStatus.IN_PROGRESS,
+      to: OrderStatus.COMPLETED,
+      netProfit: totals.netProfit,
+    });
     this.events.emitOrderUpdate(updated);
     this.logger.log(`Order ${orderId} completed. Net profit: ${totals.netProfit}`);
     return updated;

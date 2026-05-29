@@ -13,6 +13,9 @@ import { MasterMonthCalendar } from '@/components/master/MasterMonthCalendar';
 import { MasterWorkSettings } from '@/components/master/MasterWorkSettings';
 import { MasterOrderCard } from '@/components/master/MasterOrderCard';
 import { MasterOrderDetail } from '@/components/master/MasterOrderDetail';
+import { MasterAdminChat } from '@/components/master/MasterAdminChat';
+import { PwaRegister } from '@/components/PwaRegister';
+import { useMasterNotifications } from '@/hooks/useMasterNotifications';
 
 function orderWorkDate(order: Order): Date {
   if (order.scheduledAt) return new Date(order.scheduledAt);
@@ -62,6 +65,8 @@ export default function MasterDashboard() {
     }
   }, [selectedDate, tc]);
 
+  useMasterNotifications({ enabled: true, onNewOrder: loadData });
+
   useEffect(() => {
     const user = getStoredUser();
     const token = getToken();
@@ -73,12 +78,10 @@ export default function MasterDashboard() {
     loadData();
 
     const socket = getSocket(token);
-    socket.on('new_order', loadData);
     socket.on('order_update', loadData);
     socket.on('order_accepted', loadData);
 
     return () => {
-      socket.off('new_order');
       socket.off('order_update');
       socket.off('order_accepted');
     };
@@ -161,6 +164,7 @@ export default function MasterDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+      <PwaRegister />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold sm:text-2xl">{t('title')}</h1>
@@ -225,7 +229,10 @@ export default function MasterDashboard() {
             onOpenOrder={setOpenOrderId}
           />
         </div>
-        <MasterWorkSettings profile={board.profile} onSaved={loadData} />
+        <div className="space-y-4">
+          <MasterWorkSettings profile={board.profile} onSaved={loadData} />
+          <MasterAdminChat />
+        </div>
       </div>
 
       <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 pb-px">

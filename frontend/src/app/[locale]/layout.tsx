@@ -4,6 +4,13 @@ import { notFound } from 'next/navigation';
 import { locales, type Locale } from '@/i18n/config';
 import { Header } from '@/components/Header';
 import '../globals.css';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  manifest: '/manifest.webmanifest',
+  themeColor: '#1d4ed8',
+  appleWebApp: { capable: true, title: 'dr.Climate' },
+};
 
 export default async function LocaleLayout({
   children,
@@ -19,6 +26,9 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale}>
+      <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
+      </head>
       <body>
         <NextIntlClientProvider messages={messages}>
           <Header />

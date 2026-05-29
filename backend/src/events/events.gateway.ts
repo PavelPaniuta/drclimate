@@ -81,4 +81,9 @@ export class EventsGateway implements OnGatewayConnection {
   emitOrderComment(orderId: string, comment: unknown) {
     this.server.to(`order:${orderId}`).emit('new_comment', comment);
   }
+
+  emitMasterChatMessage(masterId: string, message: unknown) {
+    this.server.to(`user:${masterId}`).emit('master_chat_message', message);
+    this.server.to('role:ADMIN').emit('master_chat_message', { masterId, message });
+  }
 }

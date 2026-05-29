@@ -30,6 +30,22 @@ export class AdminCreateOrderDto extends CreateOrderDto {
   clientId!: string;
 }
 
+export class AdminUpdateOrderDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  address?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price?: number;
+
+  @IsOptional()
+  @IsEnum(OrderStatus)
+  status?: OrderStatus;
+}
+
 export class UpdateOrderStatusDto {
   @IsEnum(OrderStatus)
   status!: OrderStatus;

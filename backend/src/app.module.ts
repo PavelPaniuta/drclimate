@@ -10,6 +10,7 @@ import { AdminModule } from './admin/admin.module';
 import { MatchingModule } from './matching/matching.module';
 import { EventsModule } from './events/events.module';
 import { CitiesModule } from './cities/cities.module';
+import { MasterChatModule } from './master-chat/master-chat.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { CitiesModule } from './cities/cities.module';
     MatchingModule,
     EventsModule,
     CitiesModule,
+    MasterChatModule,
   ],
 })
 export class AppModule {}

@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
-import { AdminCreateOrderDto } from '../orders/dto/order.dto';
+import { AdminCreateOrderDto, AdminUpdateOrderDto } from '../orders/dto/order.dto';
+import { OrderAuditService } from '../orders/order-audit.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private prisma: PrismaService,
     private ordersService: OrdersService,
+    private orderAudit: OrderAuditService,
   ) {}
 
   getUsers() {
@@ -39,8 +41,16 @@ export class AdminService {
     });
   }
 
-  createOrder(dto: AdminCreateOrderDto) {
+  createOrder(dto: AdminCreateOrderDto, adminId: string) {
     const { clientId, ...orderData } = dto;
-    return this.ordersService.create(clientId, orderData);
+    return this.ordersService.create(clientId, orderData, adminId);
+  }
+
+  updateOrder(orderId: string, adminId: string, dto: AdminUpdateOrderDto) {
+    return this.ordersService.adminUpdate(orderId, adminId, dto);
+  }
+
+  getOrderAudit(orderId: string) {
+    return this.orderAudit.findByOrder(orderId);
   }
 }

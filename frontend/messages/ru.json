@@ -119,7 +119,13 @@
     "commentPlaceholder": "Добавить комментарий...",
     "addComment": "Добавить",
     "clientChat": "Чат с клиентом",
-    "retry": "Попробовать снова"
+    "retry": "Попробовать снова",
+    "newOrderTitle": "Новая заявка",
+    "newOrderBody": "Поступила новая заявка в вашем городе",
+    "adminChat": "Чат с админом",
+    "adminChatPlaceholder": "Написать админу...",
+    "adminLabel": "Админ",
+    "youLabel": "Вы"
   },
   "admin": {
     "title": "Админ-панель",
@@ -150,7 +156,16 @@
     "activateCity": "Активировать",
     "cityActive": "Активен",
     "cityInactive": "Неактивен",
-    "citySlug": "Код (slug)"
+    "citySlug": "Код (slug)",
+    "editOrder": "Редактировать",
+    "saveOrder": "Сохранить",
+    "cancelEdit": "Отмена",
+    "auditLog": "История изменений",
+    "masters": "Мастера",
+    "mastersHint": "Онлайн-статус и чат с мастером",
+    "activeJobs": "активных",
+    "selectMasterChat": "Выберите мастера для чата",
+    "chatPlaceholder": "Сообщение..."
   },
   "orderStatus": {
     "CREATED": "Создано",

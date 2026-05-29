@@ -10,6 +10,8 @@ import { Order } from '@/lib/types';
 import { City, findCityBySlug, getCityName } from '@/lib/cities';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CitySelect } from '@/components/CitySelect';
+import { AdminOrderEditModal } from '@/components/admin/AdminOrderEditModal';
+import { AdminMastersPanel } from '@/components/admin/AdminMastersPanel';
 
 interface AdminUser {
   id: string;
@@ -24,6 +26,7 @@ interface AdminUser {
 
 const SERVICE_TYPES = ['AC_INSTALLATION', 'AC_REPAIR', 'AC_MAINTENANCE'] as const;
 const STATUS_ORDER = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+type AdminTab = 'orders' | 'masters';
 
 export default function AdminDashboard() {
   const t = useTranslations('admin');
@@ -50,6 +53,8 @@ export default function AdminDashboard() {
   });
   const [newCity, setNewCity] = useState({ slug: '', nameUk: '', nameRu: '', nameEn: '' });
   const [cityEdits, setCityEdits] = useState<Record<string, { nameUk: string; nameRu: string; nameEn: string }>>({});
+  const [tab, setTab] = useState<AdminTab>('orders');
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -182,8 +187,32 @@ export default function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
-      <h1 className="mb-6 text-xl font-bold sm:mb-8 sm:text-2xl">{t('title')}</h1>
+      <h1 className="mb-4 text-xl font-bold sm:mb-6 sm:text-2xl">{t('title')}</h1>
 
+      <div className="mb-6 flex gap-1 overflow-x-auto border-b border-slate-200">
+        {(['orders', 'masters'] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={clsx(
+              'whitespace-nowrap px-4 py-2 text-sm font-medium',
+              tab === id ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500',
+            )}
+          >
+            {id === 'orders' ? t('orders') : t('masters')}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'masters' && (
+        <section className="mb-12">
+          <AdminMastersPanel cities={allCities} />
+        </section>
+      )}
+
+      {tab === 'orders' && (
+        <>
       <div className="mb-8 grid gap-3 sm:grid-cols-3">
         <div className="card border-l-4 border-l-amber-400">
           <p className="text-xs uppercase text-slate-500">{t('statPending')}</p>
@@ -352,7 +381,7 @@ export default function AdminDashboard() {
                 <div className="divide-y divide-slate-100">
                   {cityOrders.map((order) => (
                     <div key={order.id} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 hover:bg-slate-50/50">
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setEditingOrder(order)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setEditingOrder(order)}>
                         <div className="mb-1 flex flex-wrap items-center gap-2">
                           <span className="font-medium">{ts(order.serviceType as 'AC_REPAIR')}</span>
                           <StatusBadge status={order.status} />
@@ -364,6 +393,13 @@ export default function AdminDashboard() {
                           {order.master ? ` · ${t('assignedMaster')}: ${order.master.name}` : ` · ${t('waitingMaster')}`}
                         </p>
                       </div>
+                      <button
+                        type="button"
+                        className="btn-secondary shrink-0 text-xs"
+                        onClick={() => setEditingOrder(order)}
+                      >
+                        {t('editOrder')}
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -406,6 +442,19 @@ export default function AdminDashboard() {
           </table>
         </div>
       </section>
+        </>
+      )}
+
+      {editingOrder && (
+        <AdminOrderEditModal
+          order={editingOrder}
+          onClose={() => setEditingOrder(null)}
+          onSaved={() => {
+            const token = getToken();
+            if (token) void loadData(token);
+          }}
+        />
+      )}
     </div>
   );
 }
