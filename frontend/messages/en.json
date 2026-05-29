@@ -127,6 +127,8 @@
     "retry": "Try again",
     "newOrderTitle": "New request",
     "newOrderBody": "A new request in your city",
+    "newOrderBadge": "New",
+    "newOrdersBanner": "{count} new request(s) — view incoming",
     "adminChat": "Chat with admin",
     "adminChatPlaceholder": "Message admin...",
     "adminLabel": "Admin",

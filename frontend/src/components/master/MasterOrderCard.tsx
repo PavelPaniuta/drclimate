@@ -10,6 +10,7 @@ interface Props {
   onOpen: () => void;
   onAccept?: () => void;
   unreadCount?: number;
+  isNewOrder?: boolean;
 }
 
 function formatDateTime(iso: string | undefined, locale: string) {
@@ -22,7 +23,7 @@ function formatDateTime(iso: string | undefined, locale: string) {
   });
 }
 
-export function MasterOrderCard({ order, onOpen, onAccept, unreadCount = 0 }: Props) {
+export function MasterOrderCard({ order, onOpen, onAccept, unreadCount = 0, isNewOrder = false }: Props) {
   const t = useTranslations('master');
   const ts = useTranslations('serviceType');
   const tc = useTranslations('common');
@@ -34,7 +35,9 @@ export function MasterOrderCard({ order, onOpen, onAccept, unreadCount = 0 }: Pr
     <div
       className={clsx(
         'card cursor-pointer border-l-4 transition hover:shadow-md',
-        unreadCount > 0 ? 'border-l-red-500 ring-2 ring-red-100' : 'border-l-brand-500',
+        isNewOrder && 'animate-pulse border-l-amber-500 bg-amber-50/80 ring-2 ring-amber-300',
+        !isNewOrder && unreadCount > 0 && 'border-l-red-500 ring-2 ring-red-100',
+        !isNewOrder && unreadCount === 0 && 'border-l-brand-500',
       )}
       onClick={onOpen}
       onKeyDown={(e) => e.key === 'Enter' && onOpen()}
@@ -42,13 +45,23 @@ export function MasterOrderCard({ order, onOpen, onAccept, unreadCount = 0 }: Pr
       tabIndex={0}
     >
       <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="font-semibold text-slate-900">{ts(order.serviceType as 'AC_REPAIR')}</p>
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <p className="font-semibold text-slate-900">{ts(order.serviceType as 'AC_REPAIR')}</p>
+            {isNewOrder && (
+              <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+                {t('newOrderBadge')}
+              </span>
+            )}
+          </div>
           {when && <p className="text-sm text-brand-700">📅 {when}</p>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {unreadCount > 0 && (
-            <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+            <span
+              className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white"
+              title={t('newMessage')}
+            >
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
@@ -56,7 +69,9 @@ export function MasterOrderCard({ order, onOpen, onAccept, unreadCount = 0 }: Pr
         </div>
       </div>
 
-      <p className="text-sm text-slate-600 line-clamp-2">{order.description}</p>
+      <p className={clsx('text-sm line-clamp-2', isNewOrder ? 'font-medium text-slate-800' : 'text-slate-600')}>
+        {order.description}
+      </p>
       <p className="mt-1 text-sm text-slate-500">📍 {order.address}, {order.city}</p>
       {profit != null && order.status === 'COMPLETED' && (
         <p className="mt-1 text-sm font-medium text-green-700">💰 {profit} ₴</p>

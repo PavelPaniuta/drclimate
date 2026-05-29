@@ -1,32 +1,46 @@
-/** Browser notifications + short sound for new orders (master). */
+/** Browser notifications + sound for new orders (master). */
 
 let audioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   if (!audioCtx) {
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const Ctx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!Ctx) return null;
     audioCtx = new Ctx();
   }
   return audioCtx;
 }
 
+/** ~1.4s ascending alert — easy to hear on site. */
 export function playNewOrderSound() {
   const ctx = getAudioContext();
   if (!ctx) return;
   if (ctx.state === 'suspended') void ctx.resume();
 
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(880, ctx.currentTime);
-  gain.gain.setValueAtTime(0.15, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.35);
+  const pattern: { freq: number; at: number; duration: number; volume: number }[] = [
+    { freq: 523.25, at: 0, duration: 0.28, volume: 0.22 },
+    { freq: 659.25, at: 0.32, duration: 0.28, volume: 0.24 },
+    { freq: 783.99, at: 0.64, duration: 0.32, volume: 0.26 },
+    { freq: 1046.5, at: 1.0, duration: 0.55, volume: 0.28 },
+  ];
+
+  for (const { freq, at, duration, volume } of pattern) {
+    const start = ctx.currentTime + at;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, start);
+    gain.gain.setValueAtTime(0.001, start);
+    gain.gain.linearRampToValueAtTime(volume, start + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + duration + 0.05);
+  }
 }
 
 export async function requestNotificationPermission(): Promise<NotificationPermission> {

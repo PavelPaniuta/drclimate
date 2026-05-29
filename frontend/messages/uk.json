@@ -127,6 +127,8 @@
     "retry": "Спробувати знову",
     "newOrderTitle": "Нова заявка",
     "newOrderBody": "Надійшла нова заявка у вашому місті",
+    "newOrderBadge": "Нова",
+    "newOrdersBanner": "{count} нових заявок — переглянути вхідні",
     "adminChat": "Чат з адміном",
     "adminChatPlaceholder": "Написати адміну...",
     "adminLabel": "Адмін",

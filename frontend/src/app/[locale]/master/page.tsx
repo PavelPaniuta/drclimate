@@ -19,6 +19,7 @@ import { PwaRegister } from '@/components/PwaRegister';
 import { useMasterNotifications } from '@/hooks/useMasterNotifications';
 import { useMasterChatUnread } from '@/hooks/useMasterChatUnread';
 import { useMasterOrderChatUnread } from '@/hooks/useMasterOrderChatUnread';
+import { useMasterIncomingNew } from '@/hooks/useMasterIncomingNew';
 
 function orderWorkDate(order: Order): Date {
   if (order.scheduledAt) return new Date(order.scheduledAt);
@@ -75,7 +76,15 @@ export default function MasterDashboard() {
     }
   }, [selectedDate, tc]);
 
-  useMasterNotifications({ enabled: true, onNewOrder: loadData });
+  useMasterNotifications({ enabled: true });
+
+  const incomingList = board?.orders.incoming ?? [];
+  const {
+    newCount: newIncomingCount,
+    sortedIncoming,
+    isNew: isNewIncoming,
+    markSeen: markIncomingSeen,
+  } = useMasterIncomingNew(incomingList, loadData);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -112,6 +121,7 @@ export default function MasterDashboard() {
     if (!token) return;
     setError('');
     try {
+      markIncomingSeen(id);
       await api(`/orders/${id}/accept`, { method: 'POST' }, token);
       setTab('active');
       setOpenOrderId(id);
@@ -122,19 +132,19 @@ export default function MasterDashboard() {
     }
   }
 
-  const tabs: { id: MasterTab; label: string; count: number }[] = useMemo(() => {
+  const tabs: { id: MasterTab; label: string; count: number; newCount: number }[] = useMemo(() => {
     if (!board) return [];
     const todayDateOrders = selectedDate
       ? ordersOnDate(board.orders.all, selectedDate).length
       : board.orders.today.length;
     return [
-      { id: 'active', label: t('tabActive'), count: board.orders.active.length },
-      { id: 'today', label: t('tabToday'), count: todayDateOrders },
-      { id: 'incoming', label: t('tabIncoming'), count: board.orders.incoming.length },
-      { id: 'completed', label: t('tabCompleted'), count: board.orders.completed.length },
-      { id: 'all', label: t('tabAll'), count: board.orders.all.length },
+      { id: 'incoming' as const, label: t('tabIncoming'), count: board.orders.incoming.length, newCount: newIncomingCount },
+      { id: 'active' as const, label: t('tabActive'), count: board.orders.active.length, newCount: 0 },
+      { id: 'today' as const, label: t('tabToday'), count: todayDateOrders, newCount: 0 },
+      { id: 'completed' as const, label: t('tabCompleted'), count: board.orders.completed.length, newCount: 0 },
+      { id: 'all' as const, label: t('tabAll'), count: board.orders.all.length, newCount: 0 },
     ];
-  }, [board, selectedDate, t]);
+  }, [board, selectedDate, t, newIncomingCount]);
 
   const displayedOrders: Order[] = useMemo(() => {
     if (!board) return [];
@@ -143,7 +153,7 @@ export default function MasterDashboard() {
     }
     switch (tab) {
       case 'incoming':
-        return board.orders.incoming;
+        return sortedIncoming;
       case 'active':
         return board.orders.active;
       case 'completed':
@@ -153,7 +163,7 @@ export default function MasterDashboard() {
       default:
         return board.orders.today;
     }
-  }, [board, tab, selectedDate]);
+  }, [board, tab, selectedDate, sortedIncoming]);
 
   if (!board) {
     return (
@@ -221,6 +231,19 @@ export default function MasterDashboard() {
           <span>{t('orderChatUnreadBanner', { count: orderChatUnread })}</span>
           <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-red-500 px-2 text-xs font-bold text-white">
             {orderChatUnread > 99 ? '99+' : orderChatUnread}
+          </span>
+        </button>
+      )}
+
+      {newIncomingCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setTab('incoming')}
+          className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 text-left text-sm font-semibold text-amber-900 shadow-sm transition hover:bg-amber-100"
+        >
+          <span>🔔 {t('newOrdersBanner', { count: newIncomingCount })}</span>
+          <span className="flex h-8 min-w-8 shrink-0 animate-pulse items-center justify-center rounded-full bg-amber-500 px-2 text-xs font-bold text-white">
+            {newIncomingCount > 99 ? '99+' : newIncomingCount}
           </span>
         </button>
       )}
@@ -297,27 +320,39 @@ export default function MasterDashboard() {
       </div>
 
       <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 pb-px">
-        {tabs.map(({ id, label, count }) => (
+        {tabs.map(({ id, label, count, newCount }) => (
           <button
             key={id}
             type="button"
             onClick={() => setTab(id)}
             className={clsx(
-              'whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium transition',
+              'relative whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium transition',
               tab === id
                 ? 'border border-b-0 border-slate-200 bg-white text-brand-700'
                 : 'text-slate-500 hover:text-slate-800',
+              id === 'incoming' && newCount > 0 && tab !== id && 'text-amber-800',
             )}
           >
             {label}
-            {count > 0 && (
-              <span className={clsx(
-                'ml-2 rounded-full px-2 py-0.5 text-xs',
-                tab === id ? 'bg-brand-100 text-brand-700' : 'bg-slate-100',
-              )}>
+            {newCount > 0 ? (
+              <span
+                className={clsx(
+                  'ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold',
+                  tab === id ? 'bg-amber-500 text-white' : 'animate-pulse bg-red-500 text-white',
+                )}
+              >
+                {newCount > 99 ? '99+' : newCount}
+              </span>
+            ) : count > 0 ? (
+              <span
+                className={clsx(
+                  'ml-2 rounded-full px-2 py-0.5 text-xs',
+                  tab === id ? 'bg-brand-100 text-brand-700' : 'bg-slate-100',
+                )}
+              >
                 {count}
               </span>
-            )}
+            ) : null}
           </button>
         ))}
       </div>
@@ -337,8 +372,12 @@ export default function MasterDashboard() {
           <MasterOrderCard
             key={order.id}
             order={order}
+            isNewOrder={tab === 'incoming' && isNewIncoming(order.id)}
             unreadCount={orderChatByOrder[order.id] ?? 0}
-            onOpen={() => setOpenOrderId(order.id)}
+            onOpen={() => {
+              if (tab === 'incoming') markIncomingSeen(order.id);
+              setOpenOrderId(order.id);
+            }}
             onAccept={
               tab === 'incoming'
                 ? () => acceptOrder(order.id).catch(() => {})

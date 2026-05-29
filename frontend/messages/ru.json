@@ -127,6 +127,8 @@
     "retry": "Попробовать снова",
     "newOrderTitle": "Новая заявка",
     "newOrderBody": "Поступила новая заявка в вашем городе",
+    "newOrderBadge": "Новая",
+    "newOrdersBanner": "{count} новых заявок — смотреть входящие",
     "adminChat": "Чат с админом",
     "adminChatPlaceholder": "Написать админу...",
     "adminLabel": "Админ",
