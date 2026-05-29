@@ -15,6 +15,7 @@ export function AdminNav() {
   const links = [
     { href: `/${locale}/admin`, label: t('navOverview'), exact: true },
     { href: `/${locale}/admin/orders/create`, label: t('navCreateOrder') },
+    { href: `/${locale}/admin/users`, label: t('navUsers') },
     { href: `/${locale}/admin/cities`, label: t('navCities') },
     { href: `/${locale}/admin/masters`, label: t('navMasters'), badge: chatUnread },
   ];

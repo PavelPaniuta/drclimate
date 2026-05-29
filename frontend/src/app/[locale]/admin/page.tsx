@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import Link from 'next/link';
 import clsx from 'clsx';
 import { api } from '@/lib/api';
 import { getToken } from '@/lib/auth';
@@ -13,23 +14,11 @@ import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { ORDER_STATUS_SORT_ORDER } from '@/lib/order-status';
 import { useRequireAuth } from '@/hooks/useAuthRedirect';
 
-interface AdminUser {
-  id: string;
-  email: string;
-  role: string;
-  name?: string;
-  phone?: string;
-  city?: string;
-  isBanned: boolean;
-}
-
 export default function AdminDashboard() {
   const t = useTranslations('admin');
   const tStatus = useTranslations('orderStatus');
   const ts = useTranslations('serviceType');
-  const ta = useTranslations('auth');
   const locale = useLocale();
-  const [users, setUsers] = useState<AdminUser[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [allCities, setAllCities] = useState<City[]>([]);
@@ -46,23 +35,14 @@ export default function AdminDashboard() {
   }, [authorized]);
 
   async function loadData(token: string) {
-    const [u, o, c, cAll] = await Promise.all([
-      api<AdminUser[]>('/admin/users', {}, token),
+    const [o, c, cAll] = await Promise.all([
       api<Order[]>('/admin/orders', {}, token),
       api<City[]>('/cities'),
       api<City[]>('/cities/manage', {}, token),
     ]);
-    setUsers(u);
     setOrders(o);
     setCities(c);
     setAllCities(cAll);
-  }
-
-  async function toggleBan(userId: string, isBanned: boolean) {
-    const token = getToken();
-    if (!token) return;
-    await api(`/admin/users/${userId}/ban`, { method: 'PATCH', body: JSON.stringify({ isBanned: !isBanned }) }, token);
-    loadData(token);
   }
 
   const filteredOrders = useMemo(() => {
@@ -202,41 +182,14 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      <section>
-        <h2 className="mb-4 text-lg font-semibold">{t('users')}</h2>
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b bg-slate-50">
-              <tr>
-                <th className="p-3">Email</th>
-                <th className="p-3">{ta('name')}</th>
-                <th className="p-3">Role</th>
-                <th className="p-3">{ta('city')}</th>
-                <th className="p-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-b last:border-0">
-                  <td className="p-3">{u.email}</td>
-                  <td className="p-3">{u.name || '—'}</td>
-                  <td className="p-3">{u.role}</td>
-                  <td className="p-3">{getCityName(findCityBySlug(cities, u.city), u.city, locale)}</td>
-                  <td className="p-3">
-                    {u.role !== 'ADMIN' && (
-                      <button
-                        onClick={() => toggleBan(u.id, u.isBanned)}
-                        className={clsx('text-sm', u.isBanned ? 'text-green-600' : 'text-red-600')}
-                      >
-                        {u.isBanned ? t('unban') : t('ban')}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="card flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">{t('users')}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t('usersOverviewHint')}</p>
         </div>
+        <Link href={`/${locale}/admin/users`} className="btn-primary text-sm">
+          {t('manageUsers')}
+        </Link>
       </section>
 
       {editingOrder && (

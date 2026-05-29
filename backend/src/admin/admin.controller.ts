@@ -5,6 +5,7 @@ import { AdminService } from './admin.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { AdminCreateOrderDto, AdminUpdateOrderDto } from '../orders/dto/order.dto';
+import { AdminUpdateUserDto } from './dto/admin-user.dto';
 import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 
 @Controller('admin')
@@ -40,6 +41,16 @@ export class AdminController {
   @Get('orders/:id/audit')
   getOrderAudit(@Param('id') id: string) {
     return this.adminService.getOrderAudit(id);
+  }
+
+  @Get('users/:id')
+  getUser(@Param('id') id: string) {
+    return this.adminService.getUserById(id);
+  }
+
+  @Patch('users/:id')
+  updateUser(@Param('id') id: string, @Body() dto: AdminUpdateUserDto) {
+    return this.adminService.updateUser(id, dto);
   }
 
   @Patch('users/:id/ban')
