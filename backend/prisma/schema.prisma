@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  MASTER
+  ADMIN
+}
+
+enum ServiceCategory {
+  HVAC
+  ELECTRICAL
+  PLUMBING
+  CLEANING
+}
+
+enum ServiceType {
+  AC_INSTALLATION
+  AC_REPAIR
+  AC_MAINTENANCE
+}
+
+enum OrderStatus {
+  CREATED
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model City {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  nameUk    String
+  nameRu    String
+  nameEn    String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([isActive, sortOrder])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(CLIENT)
+  name      String?
+  phone     String?
+  city      String?
+  isBanned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  masterProfile MasterProfile?
+  clientOrders  ServiceRequest[] @relation("ClientOrders")
+  masterOrders  ServiceRequest[] @relation("MasterOrders")
+  sentMessages  Message[]
+  orderComments OrderComment[]
+  ratingsGiven  Rating[]         @relation("RatingsGiven")
+
+  @@index([role, city])
+}
+
+model MasterProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills        ServiceType[]
+  serviceArea   String
+  isOnline      Boolean  @default(false)
+  bio           String?
+  maxJobsPerDay Int      @default(3)
+  workDayStart  Int      @default(9)
+  workDayEnd    Int      @default(18)
+  totalEarnings Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([serviceArea, isOnline])
+}
+
+model ServiceRequest {
+  id            String          @id @default(uuid())
+  clientId      String
+  client        User            @relation("ClientOrders", fields: [clientId], references: [id])
+  masterId      String?
+  master        User?           @relation("MasterOrders", fields: [masterId], references: [id])
+  category      ServiceCategory @default(HVAC)
+  serviceType   ServiceType
+  description   String
+  address       String
+  city          String
+  preferredTime DateTime?
+  scheduledAt   DateTime?
+  masterNotes   String?
+  status        OrderStatus     @default(CREATED)
+  price         Decimal?        @db.Decimal(12, 2)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  messages   Message[]
+  comments   OrderComment[]
+  rating     Rating?
+  settlement OrderSettlement?
+
+  @@index([city, status])
+  @@index([masterId, status])
+  @@index([clientId])
+  @@index([masterId, scheduledAt])
+}
+
+enum ExpenseCategory {
+  MATERIAL
+  OTHER
+}
+
+model OrderSettlement {
+  id            String         @id @default(uuid())
+  orderId       String         @unique
+  order         ServiceRequest @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  clientPaid    Decimal        @db.Decimal(12, 2)
+  transportCost Decimal        @default(0) @db.Decimal(12, 2)
+  otherCosts    Decimal        @default(0) @db.Decimal(12, 2)
+  materialsCost Decimal        @default(0) @db.Decimal(12, 2)
+  totalExpenses Decimal        @default(0) @db.Decimal(12, 2)
+  netProfit     Decimal        @default(0) @db.Decimal(12, 2)
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  expenseItems OrderExpenseItem[]
+}
+
+model OrderExpenseItem {
+  id           String          @id @default(uuid())
+  settlementId String
+  settlement   OrderSettlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  name         String
+  quantity     Decimal         @default(1) @db.Decimal(10, 2)
+  unitPrice    Decimal         @db.Decimal(12, 2)
+  totalPrice   Decimal         @db.Decimal(12, 2)
+  category     ExpenseCategory @default(MATERIAL)
+  createdAt    DateTime        @default(now())
+
+  @@index([settlementId])
+}
+
+model OrderComment {
+  id        String         @id @default(uuid())
+  orderId   String
+  order     ServiceRequest @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User           @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime       @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model Message {
+  id        String         @id @default(uuid())
+  orderId   String
+  order     ServiceRequest @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User           @relation(fields: [senderId], references: [id])
+  content   String
+  createdAt DateTime       @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model Rating {
+  id        String         @id @default(uuid())
+  orderId   String         @unique
+  order     ServiceRequest @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    User           @relation("RatingsGiven", fields: [clientId], references: [id])
+  score     Int
+  comment   String?
+  createdAt DateTime       @default(now())
+}
