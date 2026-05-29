@@ -16,9 +16,8 @@ import { MasterOrderDetail } from '@/components/master/MasterOrderDetail';
 import { MasterAdminChat } from '@/components/master/MasterAdminChat';
 import { ChatLauncherButton } from '@/components/chat/ChatLauncherButton';
 import { PwaRegister } from '@/components/PwaRegister';
-import { parseMasterChatPayload } from '@/lib/chat-messages';
-import { MasterChatMessage } from '@/lib/types';
 import { useMasterNotifications } from '@/hooks/useMasterNotifications';
+import { useMasterChatUnread } from '@/hooks/useMasterChatUnread';
 
 function orderWorkDate(order: Order): Date {
   if (order.scheduledAt) return new Date(order.scheduledAt);
@@ -53,18 +52,7 @@ export default function MasterDashboard() {
   const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatUnread, setChatUnread] = useState(0);
-
-  const loadChatUnread = useCallback(async () => {
-    const token = getToken();
-    if (!token) return;
-    try {
-      const data = await api<{ count: number }>('/masters/admin-chat/unread', {}, token);
-      setChatUnread(data.count);
-    } catch {
-      // ignore
-    }
-  }, []);
+  const { count: chatUnread, refresh: refreshChatUnread } = useMasterChatUnread(true);
 
   const loadData = useCallback(async () => {
     const token = getToken();
@@ -92,24 +80,16 @@ export default function MasterDashboard() {
     }
 
     loadData();
-    void loadChatUnread();
 
     const socket = getSocket(token);
     socket.on('order_update', loadData);
     socket.on('order_accepted', loadData);
-    socket.on('master_chat_message', (payload: MasterChatMessage | { message?: MasterChatMessage }) => {
-      const msg = parseMasterChatPayload(payload);
-      if (msg?.sender.role === 'ADMIN' && !chatOpen) {
-        void loadChatUnread();
-      }
-    });
 
     return () => {
       socket.off('order_update');
       socket.off('order_accepted');
-      socket.off('master_chat_message');
     };
-  }, [router, loadData, loadChatUnread, chatOpen]);
+  }, [router, loadData]);
 
   async function toggleOnline() {
     const token = getToken();
@@ -218,7 +198,7 @@ export default function MasterDashboard() {
       <MasterAdminChat
         open={chatOpen}
         onClose={() => setChatOpen(false)}
-        onUnreadChange={loadChatUnread}
+        onUnreadChange={refreshChatUnread}
       />
 
       {error && (

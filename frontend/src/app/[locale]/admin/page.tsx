@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
@@ -9,11 +9,8 @@ import { getToken, getStoredUser } from '@/lib/auth';
 import { Order } from '@/lib/types';
 import { City, findCityBySlug, getCityName } from '@/lib/cities';
 import { StatusBadge } from '@/components/StatusBadge';
-import { CitySelect } from '@/components/CitySelect';
 import { AdminOrderEditModal } from '@/components/admin/AdminOrderEditModal';
-import { AdminMastersPanel } from '@/components/admin/AdminMastersPanel';
-import { ChatLauncherButton } from '@/components/chat/ChatLauncherButton';
-import { getSocket } from '@/lib/socket';
+import { AdminNav } from '@/components/admin/AdminNav';
 
 interface AdminUser {
   id: string;
@@ -23,52 +20,23 @@ interface AdminUser {
   phone?: string;
   city?: string;
   isBanned: boolean;
-  masterProfile?: { isOnline: boolean; serviceArea: string };
 }
 
-const SERVICE_TYPES = ['AC_INSTALLATION', 'AC_REPAIR', 'AC_MAINTENANCE'] as const;
 const STATUS_ORDER = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
-type AdminTab = 'orders' | 'masters';
 
 export default function AdminDashboard() {
   const t = useTranslations('admin');
   const ts = useTranslations('serviceType');
   const ta = useTranslations('auth');
-  const tc = useTranslations('client');
   const locale = useLocale();
   const router = useRouter();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [allCities, setAllCities] = useState<City[]>([]);
-  const [submitting, setSubmitting] = useState(false);
   const [cityFilter, setCityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [form, setForm] = useState({
-    clientId: '',
-    serviceType: 'AC_REPAIR',
-    description: '',
-    address: '',
-    city: 'kyiv',
-    preferredTime: '',
-    price: '',
-  });
-  const [newCity, setNewCity] = useState({ slug: '', nameUk: '', nameRu: '', nameEn: '' });
-  const [cityEdits, setCityEdits] = useState<Record<string, { nameUk: string; nameRu: string; nameEn: string }>>({});
-  const [tab, setTab] = useState<AdminTab>('orders');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [chatUnread, setChatUnread] = useState(0);
-
-  const loadChatUnread = useCallback(async (token?: string) => {
-    const tkn = token ?? getToken();
-    if (!tkn) return;
-    try {
-      const data = await api<{ total: number }>('/admin/chat/unread', {}, tkn);
-      setChatUnread(data.total);
-    } catch {
-      // ignore
-    }
-  }, []);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -78,15 +46,7 @@ export default function AdminDashboard() {
       return;
     }
     loadData(token);
-    void loadChatUnread(token);
-
-    const socket = getSocket(token);
-    const onChat = () => void loadChatUnread(token);
-    socket.on('master_chat_message', onChat);
-    return () => {
-      socket.off('master_chat_message', onChat);
-    };
-  }, [router, loadChatUnread]);
+  }, [router]);
 
   async function loadData(token: string) {
     const [u, o, c, cAll] = await Promise.all([
@@ -99,11 +59,6 @@ export default function AdminDashboard() {
     setOrders(o);
     setCities(c);
     setAllCities(cAll);
-    setCityEdits(
-      Object.fromEntries(
-        cAll.map((city) => [city.slug, { nameUk: city.nameUk, nameRu: city.nameRu, nameEn: city.nameEn }]),
-      ),
-    );
   }
 
   async function toggleBan(userId: string, isBanned: boolean) {
@@ -112,66 +67,6 @@ export default function AdminDashboard() {
     await api(`/admin/users/${userId}/ban`, { method: 'PATCH', body: JSON.stringify({ isBanned: !isBanned }) }, token);
     loadData(token);
   }
-
-  async function createOrder(e: React.FormEvent) {
-    e.preventDefault();
-    const token = getToken();
-    if (!token || !form.clientId) return;
-    setSubmitting(true);
-    try {
-      const { price, ...rest } = form;
-      const payload = {
-        ...rest,
-        ...(price.trim() ? { price: Number(price) } : {}),
-      };
-      await api('/admin/orders', { method: 'POST', body: JSON.stringify(payload) }, token);
-      setForm((f) => ({ ...f, description: '', address: '', preferredTime: '', price: '' }));
-      loadData(token);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function addCity(e: React.FormEvent) {
-    e.preventDefault();
-    const token = getToken();
-    if (!token) return;
-    setSubmitting(true);
-    try {
-      await api('/cities', { method: 'POST', body: JSON.stringify(newCity) }, token);
-      setNewCity({ slug: '', nameUk: '', nameRu: '', nameEn: '' });
-      loadData(token);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function saveCity(slug: string) {
-    const token = getToken();
-    const edit = cityEdits[slug];
-    if (!token || !edit) return;
-    setSubmitting(true);
-    try {
-      await api(`/cities/${slug}`, { method: 'PATCH', body: JSON.stringify(edit) }, token);
-      loadData(token);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function toggleCityActive(slug: string, isActive: boolean) {
-    const token = getToken();
-    if (!token) return;
-    setSubmitting(true);
-    try {
-      await api(`/cities/${slug}`, { method: 'PATCH', body: JSON.stringify({ isActive: !isActive }) }, token);
-      loadData(token);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  const clients = users.filter((u) => u.role === 'CLIENT' && !u.isBanned);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
@@ -201,53 +96,20 @@ export default function AdminDashboard() {
     });
   }, [ordersByCity, cities]);
 
-  const stats = useMemo(() => ({
-    pending: orders.filter((o) => o.status === 'PENDING').length,
-    active: orders.filter((o) => ['ACCEPTED', 'IN_PROGRESS'].includes(o.status)).length,
-    completed: orders.filter((o) => o.status === 'COMPLETED').length,
-  }), [orders]);
+  const stats = useMemo(
+    () => ({
+      pending: orders.filter((o) => o.status === 'PENDING').length,
+      active: orders.filter((o) => ['ACCEPTED', 'IN_PROGRESS'].includes(o.status)).length,
+      completed: orders.filter((o) => o.status === 'COMPLETED').length,
+    }),
+    [orders],
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 sm:mb-6">
-        <h1 className="text-xl font-bold sm:text-2xl">{t('title')}</h1>
-        <ChatLauncherButton
-          label={t('openMastersChat')}
-          count={chatUnread}
-          active={tab === 'masters'}
-          onClick={() => setTab('masters')}
-        />
-      </div>
+      <h1 className="mb-4 text-xl font-bold sm:text-2xl">{t('title')}</h1>
+      <AdminNav />
 
-      <div className="mb-6 flex gap-1 overflow-x-auto border-b border-slate-200">
-        {(['orders', 'masters'] as const).map((id) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={clsx(
-              'relative whitespace-nowrap px-4 py-2 text-sm font-medium',
-              tab === id ? 'border-b-2 border-brand-600 text-brand-700' : 'text-slate-500',
-            )}
-          >
-            {id === 'orders' ? t('orders') : t('masters')}
-            {id === 'masters' && chatUnread > 0 && tab !== 'masters' && (
-              <span className="absolute -right-0.5 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                {chatUnread > 9 ? '9+' : chatUnread}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'masters' && (
-        <section className="mb-12">
-          <AdminMastersPanel cities={allCities} onUnreadChange={setChatUnread} />
-        </section>
-      )}
-
-      {tab === 'orders' && (
-        <>
       <div className="mb-8 grid gap-3 sm:grid-cols-3">
         <div className="card border-l-4 border-l-amber-400">
           <p className="text-xs uppercase text-slate-500">{t('statPending')}</p>
@@ -263,121 +125,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="mb-12 grid gap-6 lg:grid-cols-2">
-        <div className="card">
-          <h2 className="mb-4 text-lg font-semibold">{t('createOrder')}</h2>
-          <p className="mb-4 text-sm text-slate-500">{t('createOrderHint')}</p>
-          <form onSubmit={createOrder} className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('selectClient')}</label>
-              <select className="input" value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} required>
-                <option value="">{t('selectClient')}</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name || c.email}</option>
-                ))}
-              </select>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium">{tc('serviceType')}</label>
-                <select className="input" value={form.serviceType} onChange={(e) => setForm({ ...form, serviceType: e.target.value })}>
-                  {SERVICE_TYPES.map((st) => <option key={st} value={st}>{ts(st)}</option>)}
-                </select>
-              </div>
-              <CitySelect label={ta('city')} value={form.city} onChange={(city) => setForm({ ...form, city })} required />
-            </div>
-            <textarea className="input min-h-[80px]" placeholder={tc('description')} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required minLength={10} />
-            <input className="input" placeholder={tc('address')} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
-            <input className="input" type="datetime-local" value={form.preferredTime} onChange={(e) => setForm({ ...form, preferredTime: e.target.value })} />
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                {t('price')} <span className="font-normal text-slate-400">({t('priceOptional')})</span>
-              </label>
-              <input
-                className="input"
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder="0"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-              />
-            </div>
-            <button type="submit" className="btn-primary w-full sm:w-auto" disabled={submitting}>{t('submitOrder')}</button>
-          </form>
-        </div>
-
-        <div className="card">
-          <h2 className="mb-4 text-lg font-semibold">{t('addCity')}</h2>
-          <p className="mb-4 text-sm text-slate-500">{t('addCityHint')}</p>
-          <form onSubmit={addCity} className="space-y-3">
-            <input className="input" placeholder="slug (kyiv)" value={newCity.slug} onChange={(e) => setNewCity({ ...newCity, slug: e.target.value.toLowerCase() })} required />
-            <input className="input" placeholder="Українська" value={newCity.nameUk} onChange={(e) => setNewCity({ ...newCity, nameUk: e.target.value })} required />
-            <input className="input" placeholder="Русский" value={newCity.nameRu} onChange={(e) => setNewCity({ ...newCity, nameRu: e.target.value })} required />
-            <input className="input" placeholder="English" value={newCity.nameEn} onChange={(e) => setNewCity({ ...newCity, nameEn: e.target.value })} required />
-            <button type="submit" className="btn-secondary" disabled={submitting}>{t('addCityBtn')}</button>
-          </form>
-          <div className="mt-6 max-h-[420px] space-y-3 overflow-y-auto">
-            {allCities.map((c) => {
-              const edit = cityEdits[c.slug];
-              if (!edit) return null;
-              return (
-                <div
-                  key={c.slug}
-                  className={clsx(
-                    'rounded-lg border p-3',
-                    c.isActive ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-slate-100 opacity-75',
-                  )}
-                >
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-mono text-slate-500">{c.slug}</span>
-                    <span className={clsx('text-xs', c.isActive ? 'text-green-600' : 'text-slate-500')}>
-                      {c.isActive ? t('cityActive') : t('cityInactive')}
-                    </span>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <input
-                      className="input text-sm"
-                      value={edit.nameUk}
-                      onChange={(e) =>
-                        setCityEdits((prev) => ({ ...prev, [c.slug]: { ...edit, nameUk: e.target.value } }))
-                      }
-                    />
-                    <input
-                      className="input text-sm"
-                      value={edit.nameRu}
-                      onChange={(e) =>
-                        setCityEdits((prev) => ({ ...prev, [c.slug]: { ...edit, nameRu: e.target.value } }))
-                      }
-                    />
-                    <input
-                      className="input text-sm"
-                      value={edit.nameEn}
-                      onChange={(e) =>
-                        setCityEdits((prev) => ({ ...prev, [c.slug]: { ...edit, nameEn: e.target.value } }))
-                      }
-                    />
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button type="button" className="btn-secondary text-xs" disabled={submitting} onClick={() => saveCity(c.slug)}>
-                      {t('editCity')}
-                    </button>
-                    <button
-                      type="button"
-                      className={clsx('text-xs', c.isActive ? 'text-red-600' : 'text-green-600')}
-                      disabled={submitting}
-                      onClick={() => toggleCityActive(c.slug, c.isActive)}
-                    >
-                      {c.isActive ? t('deactivateCity') : t('activateCity')}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
       <section className="mb-12">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">{t('orders')}</h2>
@@ -385,13 +132,17 @@ export default function AdminDashboard() {
             <select className="input w-auto text-sm" value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
               <option value="all">{t('allCities')}</option>
               {allCities.filter((c) => c.isActive).map((c) => (
-                <option key={c.slug} value={c.slug}>{getCityName(c, c.slug, locale)}</option>
+                <option key={c.slug} value={c.slug}>
+                  {getCityName(c, c.slug, locale)}
+                </option>
               ))}
             </select>
             <select className="input w-auto text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">{t('allStatuses')}</option>
               {STATUS_ORDER.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
             </select>
           </div>
@@ -406,26 +157,35 @@ export default function AdminDashboard() {
             return (
               <div key={citySlug} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
                 <div className="flex items-center justify-between bg-slate-50 px-4 py-3">
-                  <h3 className="font-semibold text-brand-800">
-                    📍 {getCityName(city, citySlug, locale)}
-                  </h3>
+                  <h3 className="font-semibold text-brand-800">📍 {getCityName(city, citySlug, locale)}</h3>
                   <span className="rounded-full bg-white px-3 py-0.5 text-sm text-slate-600 shadow-sm">
                     {cityOrders.length} {t('ordersCount')}
                   </span>
                 </div>
                 <div className="divide-y divide-slate-100">
                   {cityOrders.map((order) => (
-                    <div key={order.id} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 hover:bg-slate-50/50">
-                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setEditingOrder(order)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setEditingOrder(order)}>
+                    <div
+                      key={order.id}
+                      className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 hover:bg-slate-50/50"
+                    >
+                      <div
+                        className="min-w-0 flex-1 cursor-pointer"
+                        onClick={() => setEditingOrder(order)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => e.key === 'Enter' && setEditingOrder(order)}
+                      >
                         <div className="mb-1 flex flex-wrap items-center gap-2">
                           <span className="font-medium">{ts(order.serviceType as 'AC_REPAIR')}</span>
                           <StatusBadge status={order.status} />
                         </div>
-                        <p className="text-sm text-slate-600 line-clamp-1">{order.description}</p>
+                        <p className="line-clamp-1 text-sm text-slate-600">{order.description}</p>
                         <p className="text-xs text-slate-500">
                           {order.client?.name || order.client?.email} · {order.address}
                           {order.price != null ? ` · ${order.price} ₴` : ''}
-                          {order.master ? ` · ${t('assignedMaster')}: ${order.master.name}` : ` · ${t('waitingMaster')}`}
+                          {order.master
+                            ? ` · ${t('assignedMaster')}: ${order.master.name}`
+                            : ` · ${t('waitingMaster')}`}
                         </p>
                       </div>
                       <button
@@ -466,7 +226,10 @@ export default function AdminDashboard() {
                   <td className="p-3">{getCityName(findCityBySlug(cities, u.city), u.city, locale)}</td>
                   <td className="p-3">
                     {u.role !== 'ADMIN' && (
-                      <button onClick={() => toggleBan(u.id, u.isBanned)} className={clsx('text-sm', u.isBanned ? 'text-green-600' : 'text-red-600')}>
+                      <button
+                        onClick={() => toggleBan(u.id, u.isBanned)}
+                        className={clsx('text-sm', u.isBanned ? 'text-green-600' : 'text-red-600')}
+                      >
                         {u.isBanned ? t('unban') : t('ban')}
                       </button>
                     )}
@@ -477,8 +240,6 @@ export default function AdminDashboard() {
           </table>
         </div>
       </section>
-        </>
-      )}
 
       {editingOrder && (
         <AdminOrderEditModal

@@ -12,7 +12,7 @@ import { appendChatMessage, parseMasterChatPayload } from '@/lib/chat-messages';
 
 type Props = {
   cities: City[];
-  onUnreadChange?: (total: number) => void;
+  onUnreadChange?: () => void;
 };
 
 export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
@@ -24,31 +24,28 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
   const [messages, setMessages] = useState<MasterChatMessage[]>([]);
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
-
-  const notifyUnread = useCallback(
-    (list: MasterListItem[]) => {
-      const total = list.reduce((sum, m) => sum + (m.unreadCount ?? 0), 0);
-      onUnreadChange?.(total);
-    },
-    [onUnreadChange],
-  );
+  const [newIncomingIds, setNewIncomingIds] = useState<Set<string>>(new Set());
 
   const loadMasters = useCallback(async () => {
     const token = getToken();
     if (!token) return;
     const data = await api<MasterListItem[]>('/admin/masters', {}, token);
     setMasters(data);
-    notifyUnread(data);
+    onUnreadChange?.();
     setLoading(false);
-  }, [notifyUnread]);
+  }, [onUnreadChange]);
 
-  const loadChat = useCallback(async (masterId: string) => {
-    const token = getToken();
-    if (!token) return;
-    const data = await api<MasterChatMessage[]>(`/admin/masters/${masterId}/chat`, {}, token);
-    setMessages(data);
-    await loadMasters();
-  }, [loadMasters]);
+  const loadChat = useCallback(
+    async (masterId: string) => {
+      const token = getToken();
+      if (!token) return;
+      const data = await api<MasterChatMessage[]>(`/admin/masters/${masterId}/chat`, {}, token);
+      setMessages(data);
+      setNewIncomingIds(new Set());
+      await loadMasters();
+    },
+    [loadMasters],
+  );
 
   useEffect(() => {
     void loadMasters();
@@ -57,22 +54,35 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
 
     const socket = getSocket(token);
     const onChat = (payload: { masterId?: string; message?: MasterChatMessage } | MasterChatMessage) => {
-      const masterId = 'masterId' in payload && payload.masterId ? payload.masterId : selectedId;
+      const eventMasterId = 'masterId' in payload && payload.masterId ? payload.masterId : selectedId;
       const message = parseMasterChatPayload(payload);
-      if (masterId === selectedId && message) {
-        setMessages((prev) => appendChatMessage(prev, message));
+      if (!message) {
+        void loadMasters();
+        return;
       }
-      void loadMasters();
+      if (message.sender.role === 'MASTER') {
+        if (eventMasterId === selectedId) {
+          setMessages((prev) => appendChatMessage(prev, message));
+          setNewIncomingIds((prev) => new Set(prev).add(message.id));
+        }
+        void loadMasters();
+      }
     };
+    const onUnread = () => void loadMasters();
     socket.on('master_chat_message', onChat);
+    socket.on('chat_unread', onUnread);
     return () => {
       socket.off('master_chat_message', onChat);
+      socket.off('chat_unread', onUnread);
     };
   }, [loadMasters, selectedId]);
 
   useEffect(() => {
     if (selectedId) void loadChat(selectedId);
-    else setMessages([]);
+    else {
+      setMessages([]);
+      setNewIncomingIds(new Set());
+    }
   }, [selectedId, loadChat]);
 
   async function sendMessage(e: React.FormEvent) {
@@ -98,7 +108,6 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
       <div className="card max-h-[520px] overflow-y-auto p-0">
         <div className="border-b border-slate-100 px-4 py-3">
           <h2 className="font-semibold">{t('masters')}</h2>
-          <p className="text-xs text-slate-500">{t('mastersHint')}</p>
         </div>
         <ul className="divide-y divide-slate-100">
           {masters.map((m) => {
@@ -112,13 +121,14 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
                   className={clsx(
                     'flex w-full flex-col gap-1 px-4 py-3 text-left transition hover:bg-slate-50',
                     selectedId === m.id && 'bg-brand-50',
+                    unread > 0 && selectedId !== m.id && 'bg-red-50/60',
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{m.name || m.email}</span>
+                    <span className={clsx('font-medium', unread > 0 && 'text-brand-800')}>{m.name || m.email}</span>
                     <div className="flex items-center gap-2">
                       {unread > 0 && (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                        <span className="flex h-5 min-w-5 animate-pulse items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
                           {unread > 99 ? '99+' : unread}
                         </span>
                       )}
@@ -134,10 +144,10 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
                   </div>
                   <span className="text-xs text-slate-500">
                     {getCityName(findCityBySlug(cities, m.masterProfile?.serviceArea), m.masterProfile?.serviceArea, locale)}
-                    {m._count?.masterOrders ? ` · ${m._count.masterOrders} ${t('activeJobs')}` : ''}
                   </span>
                   {last && (
-                    <span className={clsx('truncate text-xs', unread > 0 ? 'font-medium text-brand-700' : 'text-slate-400')}>
+                    <span className={clsx('truncate text-xs', unread > 0 ? 'font-semibold text-red-600' : 'text-slate-400')}>
+                      {unread > 0 ? `${t('newMessage')}: ` : ''}
                       {last.content}
                     </span>
                   )}
@@ -148,7 +158,7 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
         </ul>
       </div>
 
-      <div className="card flex min-h-[320px] flex-col">
+      <div className="card flex min-h-[360px] flex-col">
         {!selected ? (
           <p className="m-auto text-sm text-slate-400">{t('selectMasterChat')}</p>
         ) : (
@@ -159,20 +169,30 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
             </div>
             <div className="my-3 flex-1 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-3">
               {messages.length === 0 && <p className="text-sm text-slate-400">—</p>}
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={clsx(
-                    'max-w-[85%] rounded-lg px-3 py-2 text-sm',
-                    msg.sender.role === 'ADMIN' ? 'ml-auto bg-brand-100 text-brand-900' : 'bg-white text-slate-800',
-                  )}
-                >
-                  <span className="block text-xs font-medium opacity-70">
-                    {msg.sender.name || msg.sender.role}
-                  </span>
-                  {msg.content}
-                </div>
-              ))}
+              {messages.map((msg) => {
+                const isNew = newIncomingIds.has(msg.id);
+                const fromMaster = msg.sender.role === 'MASTER';
+                return (
+                  <div
+                    key={msg.id}
+                    className={clsx(
+                      'max-w-[85%] rounded-lg px-3 py-2 text-sm',
+                      fromMaster ? 'bg-white text-slate-800' : 'ml-auto bg-brand-100 text-brand-900',
+                      isNew && fromMaster && 'ring-2 ring-red-400 ring-offset-1',
+                    )}
+                  >
+                    <div className="mb-0.5 flex items-center gap-2">
+                      <span className="text-xs font-medium opacity-70">{msg.sender.name || msg.sender.role}</span>
+                      {isNew && fromMaster && (
+                        <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                          {t('newMessage')}
+                        </span>
+                      )}
+                    </div>
+                    {msg.content}
+                  </div>
+                );
+              })}
             </div>
             <form onSubmit={sendMessage} className="flex gap-2">
               <input

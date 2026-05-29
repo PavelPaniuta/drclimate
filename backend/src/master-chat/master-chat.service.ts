@@ -33,8 +33,8 @@ export class MasterChatService {
     return this.prisma.masterChatMessage.count({
       where: {
         threadId: thread.id,
+        senderId: masterId,
         createdAt: { gt: thread.adminLastReadAt ?? new Date(0) },
-        sender: { role: Role.MASTER },
       },
     });
   }
@@ -60,8 +60,8 @@ export class MasterChatService {
     return this.prisma.masterChatMessage.count({
       where: {
         threadId: thread.id,
+        senderId: { not: masterId },
         createdAt: { gt: thread.masterLastReadAt ?? new Date(0) },
-        sender: { role: Role.ADMIN },
       },
     });
   }
@@ -196,6 +196,7 @@ export class MasterChatService {
     });
 
     this.events.emitMasterChatMessage(masterId, message);
+    void this.events.emitChatUnread(masterId);
     return message;
   }
 }

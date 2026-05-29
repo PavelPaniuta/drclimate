@@ -125,7 +125,8 @@
     "adminChat": "Чат с админом",
     "adminChatPlaceholder": "Написать админу...",
     "adminLabel": "Админ",
-    "youLabel": "Вы"
+    "youLabel": "Вы",
+    "newMessage": "Новое"
   },
   "admin": {
     "title": "Админ-панель",
@@ -166,7 +167,12 @@
     "activeJobs": "активных",
     "selectMasterChat": "Выберите мастера для чата",
     "chatPlaceholder": "Сообщение...",
-    "openMastersChat": "Чат с мастерами"
+    "openMastersChat": "Чат с мастерами",
+    "navOverview": "Обзор",
+    "navCreateOrder": "Новая заявка",
+    "navCities": "Города",
+    "navMasters": "Чат",
+    "newMessage": "Новое"
   },
   "orderStatus": {
     "CREATED": "Создано",

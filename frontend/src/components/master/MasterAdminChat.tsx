@@ -21,6 +21,7 @@ export function MasterAdminChat({ open, onClose, onUnreadChange }: Props) {
   const [messages, setMessages] = useState<MasterChatMessage[]>([]);
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [newIncomingIds, setNewIncomingIds] = useState<Set<string>>(new Set());
 
   const loadMessages = useCallback(async () => {
     const token = getToken();
@@ -29,6 +30,7 @@ export function MasterAdminChat({ open, onClose, onUnreadChange }: Props) {
     try {
       const data = await api<MasterChatMessage[]>('/masters/admin-chat', {}, token);
       setMessages(data);
+      setNewIncomingIds(new Set());
       onUnreadChange?.();
     } finally {
       setLoading(false);
@@ -45,14 +47,19 @@ export function MasterAdminChat({ open, onClose, onUnreadChange }: Props) {
     const socket = getSocket(token);
     const onChat = (payload: MasterChatMessage | { message?: MasterChatMessage }) => {
       const msg = parseMasterChatPayload(payload);
-      if (msg) {
+      if (!msg) return;
+      if (msg.sender.role === 'ADMIN') {
         setMessages((prev) => appendChatMessage(prev, msg));
-        if (msg.sender.role === 'ADMIN') onUnreadChange?.();
+        setNewIncomingIds((prev) => new Set(prev).add(msg.id));
+        onUnreadChange?.();
       }
     };
+    const onUnread = () => onUnreadChange?.();
     socket.on('master_chat_message', onChat);
+    socket.on('chat_unread', onUnread);
     return () => {
       socket.off('master_chat_message', onChat);
+      socket.off('chat_unread', onUnread);
     };
   }, [open, loadMessages, onUnreadChange]);
 
@@ -74,12 +81,7 @@ export function MasterAdminChat({ open, onClose, onUnreadChange }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/40"
-        aria-label={tc('cancel')}
-        onClick={onClose}
-      />
+      <button type="button" className="absolute inset-0 bg-black/40" aria-label={tc('cancel')} onClick={onClose} />
       <div className="relative flex max-h-[85vh] w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-xl sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
           <h3 className="font-semibold text-brand-800">{t('adminChat')}</h3>
@@ -90,20 +92,32 @@ export function MasterAdminChat({ open, onClose, onUnreadChange }: Props) {
         <div className="flex-1 space-y-2 overflow-y-auto p-4">
           {loading && <p className="text-sm text-slate-500">{tc('loading')}</p>}
           {!loading && messages.length === 0 && <p className="text-sm text-slate-400">—</p>}
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={clsx(
-                'max-w-[85%] rounded-lg px-3 py-2 text-sm',
-                msg.sender.role === 'MASTER' ? 'ml-auto bg-brand-100 text-brand-900' : 'bg-slate-100 text-slate-800',
-              )}
-            >
-              <span className="block text-xs font-medium opacity-70">
-                {msg.sender.role === 'ADMIN' ? t('adminLabel') : t('youLabel')}
-              </span>
-              {msg.content}
-            </div>
-          ))}
+          {messages.map((msg) => {
+            const isNew = newIncomingIds.has(msg.id);
+            const fromAdmin = msg.sender.role === 'ADMIN';
+            return (
+              <div
+                key={msg.id}
+                className={clsx(
+                  'max-w-[85%] rounded-lg px-3 py-2 text-sm',
+                  fromAdmin ? 'mr-4 bg-slate-100 text-slate-800' : 'ml-auto bg-brand-100 text-brand-900',
+                  isNew && fromAdmin && 'ring-2 ring-red-400 ring-offset-1',
+                )}
+              >
+                <div className="mb-0.5 flex items-center gap-2">
+                  <span className="text-xs font-medium text-slate-500">
+                    {fromAdmin ? t('adminLabel') : t('youLabel')}
+                  </span>
+                  {isNew && fromAdmin && (
+                    <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                      {t('newMessage')}
+                    </span>
+                  )}
+                </div>
+                <p>{msg.content}</p>
+              </div>
+            );
+          })}
         </div>
         <form onSubmit={sendMessage} className="flex gap-2 border-t border-slate-100 p-4">
           <input

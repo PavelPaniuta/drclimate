@@ -86,4 +86,10 @@ export class EventsGateway implements OnGatewayConnection {
     this.server.to(`user:${masterId}`).emit('master_chat_message', message);
     this.server.to('role:ADMIN').emit('master_chat_message', { masterId, message });
   }
+
+  async emitChatUnread(masterId: string) {
+    const payload = { masterId, at: Date.now() };
+    this.server.to(`user:${masterId}`).emit('chat_unread', payload);
+    this.server.to('role:ADMIN').emit('chat_unread', payload);
+  }
 }

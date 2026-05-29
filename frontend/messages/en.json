@@ -125,7 +125,8 @@
     "adminChat": "Chat with admin",
     "adminChatPlaceholder": "Message admin...",
     "adminLabel": "Admin",
-    "youLabel": "You"
+    "youLabel": "You",
+    "newMessage": "New"
   },
   "admin": {
     "title": "Admin panel",
@@ -166,7 +167,12 @@
     "activeJobs": "active",
     "selectMasterChat": "Select a technician to chat",
     "chatPlaceholder": "Message...",
-    "openMastersChat": "Technician chat"
+    "openMastersChat": "Technician chat",
+    "navOverview": "Overview",
+    "navCreateOrder": "New request",
+    "navCities": "Cities",
+    "navMasters": "Chat",
+    "newMessage": "New"
   },
   "orderStatus": {
     "CREATED": "Created",
