@@ -124,6 +124,31 @@ CREATED → PENDING → ACCEPTED → IN_PROGRESS → COMPLETED
 - `NEXT_PUBLIC_API_URL` — URL API
 - `NEXT_PUBLIC_WS_URL` — URL WebSocket сервера
 
+## Деплой на VPS
+
+Після `git pull` **обов’язковий порядок** (інакше `npm run build` падає — Prisma Client без нових полів):
+
+```bash
+cd /var/www/drclimate-crm   # ваш шлях
+git pull origin main
+
+cd backend
+npm install
+npx prisma migrate deploy   # БД: adminLastReadAt, clientLastReadAt тощо
+npm run build               # всередині: prisma generate + nest build
+pm2 restart drclimat-api --update-env
+
+cd ../frontend
+npm install
+npm run build
+pm2 restart drclimat-web
+```
+
+Міграції чату (якщо ще не застосовані):
+- `20260529120000_audit_master_chat`
+- `20260529140000_chat_read_receipts`
+- `20260529150000_order_chat_read_receipts`
+
 ## Production notes
 
 - Змініть `JWT_SECRET` на довгий випадковий рядок
