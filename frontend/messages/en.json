@@ -1,7 +1,7 @@
 {
   "common": {
-    "appName": "Dr.Climat",
-    "tagline": "Home services marketplace",
+    "appName": "dr.Climate",
+    "tagline": "Orders CRM",
     "login": "Log in",
     "register": "Sign up",
     "logout": "Log out",
@@ -23,26 +23,8 @@
     "masterDashboard": "Jobs",
     "adminDashboard": "Admin panel"
   },
-  "landing": {
-    "heroTitle": "AC & climate services — fast and reliable",
-    "heroSubtitle": "Find a verified technician for AC installation, repair, or maintenance in your city.",
-    "ctaClient": "Book a service",
-    "ctaMaster": "Become a technician",
-    "featuresTitle": "Why Dr.Climat",
-    "feature1Title": "Fast matching",
-    "feature1Desc": "Your request goes to available technicians in your city — first to accept gets the job.",
-    "feature2Title": "Live status",
-    "feature2Desc": "Track your request from creation to completion in real time.",
-    "feature3Title": "Chat with technician",
-    "feature3Desc": "Clarify details directly within the request.",
-    "servicesTitle": "Available now",
-    "serviceAcInstall": "AC installation",
-    "serviceAcRepair": "AC repair",
-    "serviceAcMaint": "AC maintenance",
-    "futureTitle": "Coming soon",
-    "futureElectric": "Electricians",
-    "futurePlumber": "Plumbers",
-    "futureClean": "Cleaning"
+  "home": {
+    "subtitle": "Order management for client, technician, and admin"
   },
   "auth": {
     "email": "Email",
@@ -158,9 +140,17 @@
     "allCities": "All cities",
     "allStatuses": "All statuses",
     "ordersCount": "orders",
-    "addCity": "Add city",
-    "addCityHint": "Regional centers list. You can add new cities.",
-    "addCityBtn": "Add city"
+    "addCity": "Cities",
+    "addCityHint": "Add or edit cities. Deactivation hides a city from new orders.",
+    "addCityBtn": "Add city",
+    "price": "Price (UAH)",
+    "priceOptional": "Optional",
+    "editCity": "Save",
+    "deactivateCity": "Deactivate",
+    "activateCity": "Activate",
+    "cityActive": "Active",
+    "cityInactive": "Inactive",
+    "citySlug": "Code (slug)"
   },
   "orderStatus": {
     "CREATED": "Created",

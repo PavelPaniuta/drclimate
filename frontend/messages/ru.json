@@ -1,7 +1,7 @@
 {
   "common": {
-    "appName": "Dr.Climat",
-    "tagline": "Маркетплейс услуг для дома",
+    "appName": "dr.Climate",
+    "tagline": "CRM заявок",
     "login": "Войти",
     "register": "Регистрация",
     "logout": "Выйти",
@@ -23,26 +23,8 @@
     "masterDashboard": "Работы",
     "adminDashboard": "Админ-панель"
   },
-  "landing": {
-    "heroTitle": "Кондиционеры и климат — быстро и надёжно",
-    "heroSubtitle": "Найдите проверенного мастера для установки, ремонта или обслуживания кондиционера в вашем городе.",
-    "ctaClient": "Заказать услугу",
-    "ctaMaster": "Стать мастером",
-    "featuresTitle": "Почему Dr.Climat",
-    "feature1Title": "Быстрый подбор",
-    "feature1Desc": "Заявка попадает к мастерам в вашем городе — кто первый примет, тот и выполнит.",
-    "feature2Title": "Прозрачный статус",
-    "feature2Desc": "Отслеживайте заявку от создания до завершения в реальном времени.",
-    "feature3Title": "Чат с мастером",
-    "feature3Desc": "Уточняйте детали прямо в заявке.",
-    "servicesTitle": "Услуги сейчас",
-    "serviceAcInstall": "Установка кондиционера",
-    "serviceAcRepair": "Ремонт кондиционера",
-    "serviceAcMaint": "Обслуживание кондиционера",
-    "futureTitle": "Скоро",
-    "futureElectric": "Электрики",
-    "futurePlumber": "Сантехники",
-    "futureClean": "Клининг"
+  "home": {
+    "subtitle": "Управление заявками для клиента, мастера и админа"
   },
   "auth": {
     "email": "Email",
@@ -158,9 +140,17 @@
     "allCities": "Все города",
     "allStatuses": "Все статусы",
     "ordersCount": "заказов",
-    "addCity": "Добавить город",
-    "addCityHint": "Список областных центров. Можно добавлять новые.",
-    "addCityBtn": "Добавить город"
+    "addCity": "Города",
+    "addCityHint": "Добавьте или отредактируйте города. Деактивация скрывает город из новых заявок.",
+    "addCityBtn": "Добавить город",
+    "price": "Стоимость (грн)",
+    "priceOptional": "Необязательно",
+    "editCity": "Сохранить",
+    "deactivateCity": "Деактивировать",
+    "activateCity": "Активировать",
+    "cityActive": "Активен",
+    "cityInactive": "Неактивен",
+    "citySlug": "Код (slug)"
   },
   "orderStatus": {
     "CREATED": "Создано",

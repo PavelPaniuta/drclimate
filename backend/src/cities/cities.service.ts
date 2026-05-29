@@ -1,6 +1,6 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCityDto } from './dto/city.dto';
+import { CreateCityDto, UpdateCityDto } from './dto/city.dto';
 
 @Injectable()
 export class CitiesService {
@@ -24,6 +24,22 @@ export class CitiesService {
         nameRu: dto.nameRu,
         nameEn: dto.nameEn,
         sortOrder: dto.sortOrder ?? 100,
+      },
+    });
+  }
+
+  async update(slug: string, dto: UpdateCityDto) {
+    const city = await this.prisma.city.findUnique({ where: { slug } });
+    if (!city) throw new NotFoundException('City not found');
+
+    return this.prisma.city.update({
+      where: { slug },
+      data: {
+        ...(dto.nameUk !== undefined ? { nameUk: dto.nameUk } : {}),
+        ...(dto.nameRu !== undefined ? { nameRu: dto.nameRu } : {}),
+        ...(dto.nameEn !== undefined ? { nameEn: dto.nameEn } : {}),
+        ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       },
     });
   }

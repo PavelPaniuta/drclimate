@@ -50,6 +50,7 @@ export class OrdersService {
         address: dto.address,
         city: dto.city,
         preferredTime: dto.preferredTime ? new Date(dto.preferredTime) : undefined,
+        price: dto.price !== undefined ? dto.price : undefined,
         status: OrderStatus.CREATED,
       },
       include: this.orderIncludes(),

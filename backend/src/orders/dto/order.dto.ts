@@ -18,6 +18,11 @@ export class CreateOrderDto {
   @IsOptional()
   @IsDateString()
   preferredTime?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price?: number;
 }
 
 export class AdminCreateOrderDto extends CreateOrderDto {

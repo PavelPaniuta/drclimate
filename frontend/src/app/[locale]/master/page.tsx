@@ -163,8 +163,8 @@ export default function MasterDashboard() {
     <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{t('title')}</h1>
-          <p className="text-sm text-slate-500">{t('workboardSubtitle')}</p>
+          <h1 className="text-xl font-bold sm:text-2xl">{t('title')}</h1>
+          <p className="hidden text-sm text-slate-500 sm:block">{t('workboardSubtitle')}</p>
         </div>
         <button
           type="button"

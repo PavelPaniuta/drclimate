@@ -1,7 +1,7 @@
 {
   "common": {
-    "appName": "Dr.Climat",
-    "tagline": "Маркетплейс послуг для дому",
+    "appName": "dr.Climate",
+    "tagline": "CRM заявок",
     "login": "Увійти",
     "register": "Реєстрація",
     "logout": "Вийти",
@@ -23,26 +23,8 @@
     "masterDashboard": "Роботи",
     "adminDashboard": "Адмін-панель"
   },
-  "landing": {
-    "heroTitle": "Кондиціонери та клімат — швидко і надійно",
-    "heroSubtitle": "Знайдіть перевіреного майстра для встановлення, ремонту або обслуговування кондиціонера у вашому місті.",
-    "ctaClient": "Замовити послугу",
-    "ctaMaster": "Стати майстром",
-    "featuresTitle": "Чому Dr.Climat",
-    "feature1Title": "Швидкий підбір",
-    "feature1Desc": "Адмін створює заявку — вона одразу з'являється у всіх майстрів. Хто перший прийме, той і виконує.",
-    "feature2Title": "Прозорий статус",
-    "feature2Desc": "Відстежуйте заявку від створення до завершення в реальному часі.",
-    "feature3Title": "Чат з майстром",
-    "feature3Desc": "Уточнюйте деталі безпосередньо в заявці.",
-    "servicesTitle": "Послуги зараз",
-    "serviceAcInstall": "Встановлення кондиціонера",
-    "serviceAcRepair": "Ремонт кондиціонера",
-    "serviceAcMaint": "Обслуговування кондиціонера",
-    "futureTitle": "Незабаром",
-    "futureElectric": "Електрики",
-    "futurePlumber": "Сантехніки",
-    "futureClean": "Клінінг"
+  "home": {
+    "subtitle": "Управління заявками для клієнта, майстра та адміна"
   },
   "auth": {
     "email": "Email",
@@ -158,9 +140,17 @@
     "allCities": "Всі міста",
     "allStatuses": "Всі статуси",
     "ordersCount": "замовлень",
-    "addCity": "Додати місто",
-    "addCityHint": "Список обласних центрів. Можна додати нові.",
-    "addCityBtn": "Додати місто"
+    "addCity": "Міста",
+    "addCityHint": "Додайте або відредагуйте міста. Деактивація приховує місто з нових заявок.",
+    "addCityBtn": "Додати місто",
+    "price": "Вартість (грн)",
+    "priceOptional": "Необов'язково",
+    "editCity": "Зберегти",
+    "deactivateCity": "Деактивувати",
+    "activateCity": "Активувати",
+    "cityActive": "Активне",
+    "cityInactive": "Неактивне",
+    "citySlug": "Код (slug)"
   },
   "orderStatus": {
     "CREATED": "Створено",

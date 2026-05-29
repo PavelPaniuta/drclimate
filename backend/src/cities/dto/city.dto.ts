@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 export class CreateCityDto {
   @IsString()
@@ -18,4 +18,26 @@ export class CreateCityDto {
   @IsOptional()
   @IsInt()
   sortOrder?: number;
+}
+
+export class UpdateCityDto {
+  @IsOptional()
+  @IsString()
+  nameUk?: string;
+
+  @IsOptional()
+  @IsString()
+  nameRu?: string;
+
+  @IsOptional()
+  @IsString()
+  nameEn?: string;
+
+  @IsOptional()
+  @IsInt()
+  sortOrder?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
