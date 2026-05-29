@@ -152,7 +152,11 @@ export class MastersService {
 
     const [incoming, assigned, earningsToday] = await Promise.all([
       this.prisma.serviceRequest.findMany({
-        where: { status: OrderStatus.PENDING, masterId: null },
+        where: {
+          status: OrderStatus.PENDING,
+          masterId: null,
+          city: profile.serviceArea,
+        },
         include: orderInclude,
         orderBy: { createdAt: 'desc' },
       }),

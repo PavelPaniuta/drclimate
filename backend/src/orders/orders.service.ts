@@ -144,9 +144,14 @@ export class OrdersService {
       throw new ForbiddenException();
     }
     if (role === Role.MASTER) {
+      const profile = await this.prisma.masterProfile.findUnique({ where: { userId } });
       const isOwn = order.masterId === userId;
-      const isPending = order.status === OrderStatus.PENDING && !order.masterId;
-      if (!isOwn && !isPending) throw new ForbiddenException();
+      const isPendingInArea =
+        order.status === OrderStatus.PENDING &&
+        !order.masterId &&
+        profile != null &&
+        order.city === profile.serviceArea;
+      if (!isOwn && !isPendingInArea) throw new ForbiddenException();
     }
 
     return order;

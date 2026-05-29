@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import clsx from 'clsx';
 import { Order } from '@/lib/types';
 import { StatusBadge } from '@/components/StatusBadge';
+import { CityLabel } from '@/components/CitySelect';
 
 interface Props {
   order: Order;
@@ -72,7 +73,9 @@ export function MasterOrderCard({ order, onOpen, onAccept, unreadCount = 0, isNe
       <p className={clsx('text-sm line-clamp-2', isNewOrder ? 'font-medium text-slate-800' : 'text-slate-600')}>
         {order.description}
       </p>
-      <p className="mt-1 text-sm text-slate-500">📍 {order.address}, {order.city}</p>
+      <p className="mt-1 text-sm text-slate-500">
+        📍 {order.address}, <CityLabel slug={order.city} />
+      </p>
       {profit != null && order.status === 'COMPLETED' && (
         <p className="mt-1 text-sm font-medium text-green-700">💰 {profit} ₴</p>
       )}

@@ -7,6 +7,7 @@ import { Order } from '@/lib/types';
 import { StatusBadge } from '@/components/StatusBadge';
 import { OrderChat } from '@/components/OrderChat';
 import { MasterPublicCard } from '@/components/MasterPublicCard';
+import { CityLabel } from '@/components/CitySelect';
 
 type Props = {
   order: Order;
@@ -32,7 +33,7 @@ export function ClientOrderCard({ order, serviceTypeLabel, unreadCount = 0, onUn
       </div>
       <p className="text-sm text-slate-600">{order.description}</p>
       <p className="mt-1 text-sm text-slate-500">
-        {order.address}, {order.city}
+        {order.address}, <CityLabel slug={order.city} />
       </p>
       {!order.master && (
         <p className="mt-2 text-sm text-slate-500">{t('noMaster')}</p>

@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { OrderChat } from '@/components/OrderChat';
 import { OrderSettlementPanel } from '@/components/master/OrderSettlementPanel';
 import { ContactInfoCard } from '@/components/ContactInfoCard';
+import { CityLabel } from '@/components/CitySelect';
 import { SettlementFormData, buildCompletePayload, emptySettlementForm } from '@/lib/settlement';
 
 interface Props {
@@ -163,7 +164,9 @@ export function MasterOrderDetail({ orderId, onClose, onUpdated, onAccept, onUnr
                 </div>
                 <div className="sm:col-span-2">
                   <p className="text-xs font-medium uppercase text-slate-400">{t('address')}</p>
-                  <p className="text-sm">{order.address}, {order.city}</p>
+                  <p className="text-sm">
+                    {order.address}, <CityLabel slug={order.city} />
+                  </p>
                 </div>
                 {order.client && (
                   <div className="sm:col-span-2">
