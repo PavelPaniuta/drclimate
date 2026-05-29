@@ -11,6 +11,7 @@ import { MasterWorkboard, MasterTab } from '@/lib/master-types';
 import { Order } from '@/lib/types';
 import { MasterMonthCalendar } from '@/components/master/MasterMonthCalendar';
 import { MasterWorkSettings } from '@/components/master/MasterWorkSettings';
+import { MasterProfileEditor } from '@/components/master/MasterProfileEditor';
 import { MasterOrderDetail } from '@/components/master/MasterOrderDetail';
 import { MasterAdminChat } from '@/components/master/MasterAdminChat';
 import { MasterOrdersSection, MasterTabItem } from '@/components/master/MasterOrdersSection';
@@ -349,7 +350,9 @@ export default function MasterDashboard() {
         </button>
 
         {showExtra && (
-          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <div className="mt-4 space-y-4">
+            <MasterProfileEditor onSaved={loadData} />
+          <div className="grid gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <MasterMonthCalendar
                 orders={board.orders.all}
@@ -364,6 +367,7 @@ export default function MasterDashboard() {
               />
             </div>
             <MasterWorkSettings profile={board.profile} onSaved={loadData} />
+          </div>
           </div>
         )}
       </div>

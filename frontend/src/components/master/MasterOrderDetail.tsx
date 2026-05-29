@@ -9,6 +9,7 @@ import { Order, OrderComment } from '@/lib/types';
 import { StatusBadge } from '@/components/StatusBadge';
 import { OrderChat } from '@/components/OrderChat';
 import { OrderSettlementPanel } from '@/components/master/OrderSettlementPanel';
+import { ContactInfoCard } from '@/components/ContactInfoCard';
 import { SettlementFormData, buildCompletePayload, emptySettlementForm } from '@/lib/settlement';
 
 interface Props {
@@ -166,11 +167,7 @@ export function MasterOrderDetail({ orderId, onClose, onUpdated, onAccept, onUnr
                 </div>
                 {order.client && (
                   <div className="sm:col-span-2">
-                    <p className="text-xs font-medium uppercase text-slate-400">{t('client')}</p>
-                    <p className="text-sm">
-                      {order.client.name || order.client.email}
-                      {order.client.phone && ` · ${order.client.phone}`}
-                    </p>
+                    <ContactInfoCard person={order.client} title={t('client')} />
                   </div>
                 )}
                 <div className="sm:col-span-2">

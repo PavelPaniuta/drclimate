@@ -22,6 +22,14 @@ export class RegisterDto {
 
   @IsOptional()
   @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  telegram?: string;
+
+  @IsOptional()
+  @IsString()
   city?: string;
 }
 

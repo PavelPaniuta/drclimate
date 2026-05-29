@@ -11,10 +11,12 @@ import { MatchingModule } from './matching/matching.module';
 import { EventsModule } from './events/events.module';
 import { CitiesModule } from './cities/cities.module';
 import { MasterChatModule } from './master-chat/master-chat.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    UploadsModule,
     PrismaModule,
     AuthModule,
     UsersModule,

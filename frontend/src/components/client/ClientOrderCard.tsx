@@ -6,6 +6,7 @@ import clsx from 'clsx';
 import { Order } from '@/lib/types';
 import { StatusBadge } from '@/components/StatusBadge';
 import { OrderChat } from '@/components/OrderChat';
+import { MasterPublicCard } from '@/components/MasterPublicCard';
 
 type Props = {
   order: Order;
@@ -33,9 +34,16 @@ export function ClientOrderCard({ order, serviceTypeLabel, unreadCount = 0, onUn
       <p className="mt-1 text-sm text-slate-500">
         {order.address}, {order.city}
       </p>
-      <p className="mt-2 text-sm">
-        {t('assignedMaster')}: {order.master?.name || t('noMaster')}
-      </p>
+      {!order.master && (
+        <p className="mt-2 text-sm text-slate-500">{t('noMaster')}</p>
+      )}
+
+      {order.master && (
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium text-slate-700">{t('assignedMaster')}</p>
+          <MasterPublicCard master={order.master} />
+        </div>
+      )}
 
       {order.master && (
         <>

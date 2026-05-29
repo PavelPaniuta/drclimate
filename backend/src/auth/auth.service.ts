@@ -32,6 +32,8 @@ export class AuthService {
         role: dto.role,
         name: dto.name,
         phone: dto.phone,
+        address: dto.address,
+        telegram: dto.telegram,
         city: dto.city,
         ...(dto.role === Role.MASTER && dto.city
           ? {

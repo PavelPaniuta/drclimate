@@ -39,7 +39,20 @@
     "registerTitle": "Створити акаунт",
     "noAccount": "Немає акаунту?",
     "hasAccount": "Вже є акаунт?",
-    "loginError": "Невірний email або пароль"
+    "loginError": "Невірний email або пароль",
+    "address": "Адреса проживання",
+    "telegram": "Telegram"
+  },
+  "contacts": {
+    "name": "Ім'я",
+    "email": "Email",
+    "phone": "Телефон",
+    "address": "Адреса",
+    "telegram": "Telegram",
+    "city": "Місто",
+    "masterFallback": "Майстер",
+    "masterContacts": "Контакти майстра",
+    "workPhotos": "Фото робіт"
   },
   "client": {
     "title": "Кабінет клієнта",
@@ -56,8 +69,13 @@
     "messagePlaceholder": "Напишіть повідомлення...",
     "serviceType": "Тип послуги",
     "description": "Опис проблеми",
-    "address": "Адреса",
-    "preferredTime": "Бажаний час"
+    "address": "Адреса заявки",
+    "preferredTime": "Бажаний час",
+    "myProfile": "Мої контакти",
+    "profileHint": "Адміністратор бачить ці дані при створенні заявок. Майстер — після призначення.",
+    "editProfile": "Редагувати",
+    "profileSaved": "Контакти збережено",
+    "addressPlaceholder": "Вулиця, будинок, квартира"
   },
   "master": {
     "title": "Кабінет майстра",
@@ -151,7 +169,16 @@
     "adminLabel": "Адмін",
     "youLabel": "Ви",
     "newMessage": "Нове",
-    "chatUnreadBanner": "У вас {count} нових повідомлень від адміна — відкрити чат"
+    "chatUnreadBanner": "У вас {count} нових повідомлень від адміна — відкрити чат",
+    "profileSection": "Профіль і контакти",
+    "profileSectionHint": "Клієнт бачить ваше фото та контакти після призначення на заявку.",
+    "uploadAvatar": "Завантажити фото",
+    "avatarHint": "JPG, PNG або WebP, до 5 МБ",
+    "bio": "Про себе",
+    "bioPlaceholder": "Досвід, спеціалізація…",
+    "workPhotosHint": "До 12 фото виконаних робіт — клієнт побачить у картці заявки",
+    "addWorkPhoto": "Додати фото",
+    "workPhotoCaption": "Підпис (необов'язково)"
   },
   "admin": {
     "title": "Адмін-панель",

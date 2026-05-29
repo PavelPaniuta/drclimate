@@ -10,6 +10,7 @@ import { MasterChatMessage, MasterListItem } from '@/lib/types';
 import { getSocket } from '@/lib/socket';
 import { appendChatMessage, parseMasterChatPayload } from '@/lib/chat-messages';
 import { isOwnChatMessage } from '@/lib/chat-own-message';
+import { MasterPublicCard } from '@/components/MasterPublicCard';
 
 type Props = {
   cities: City[];
@@ -168,8 +169,7 @@ export function AdminMastersPanel({ cities, onUnreadChange }: Props) {
         ) : (
           <>
             <div className="border-b border-slate-100 pb-3">
-              <h3 className="font-semibold">{selected.name || selected.email}</h3>
-              <p className="text-xs text-slate-500">{selected.phone || selected.email}</p>
+              <MasterPublicCard master={{ ...selected, masterProfile: selected.masterProfile }} />
             </div>
             <div className="my-3 flex-1 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-3">
               {messages.length === 0 && <p className="text-sm text-slate-400">—</p>}

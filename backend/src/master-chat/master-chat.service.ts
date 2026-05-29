@@ -94,12 +94,16 @@ export class MasterChatService {
         email: true,
         name: true,
         phone: true,
+        address: true,
+        telegram: true,
         city: true,
         masterProfile: {
           select: {
             isOnline: true,
             serviceArea: true,
             totalEarnings: true,
+            avatarUrl: true,
+            bio: true,
           },
         },
         masterChatThread: {

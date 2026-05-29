@@ -7,8 +7,38 @@ export interface User {
   email: string;
   role: Role;
   name?: string;
+  phone?: string;
+  address?: string;
+  telegram?: string;
   city?: string;
 }
+
+export interface UserContact {
+  id: string;
+  name?: string | null;
+  email: string;
+  phone?: string | null;
+  address?: string | null;
+  telegram?: string | null;
+  city?: string | null;
+}
+
+export interface MasterWorkPhoto {
+  id: string;
+  url: string;
+  caption?: string | null;
+  sortOrder?: number;
+}
+
+export interface MasterPublicProfile {
+  avatarUrl?: string | null;
+  bio?: string | null;
+  workPhotos?: MasterWorkPhoto[];
+}
+
+export type OrderParty = UserContact & {
+  masterProfile?: MasterPublicProfile | null;
+};
 
 export interface AuthResponse {
   user: User;
@@ -28,8 +58,8 @@ export interface Order {
   price?: number;
   createdAt: string;
   updatedAt?: string;
-  client?: { id: string; name?: string; email: string; phone?: string };
-  master?: { id: string; name?: string; email: string; phone?: string };
+  client?: OrderParty;
+  master?: OrderParty;
   comments?: OrderComment[];
   settlement?: OrderSettlement;
 }
@@ -61,11 +91,16 @@ export interface MasterListItem {
   email: string;
   name?: string;
   phone?: string;
+  address?: string;
+  telegram?: string;
   city?: string;
   masterProfile?: {
     isOnline: boolean;
     serviceArea: string;
     totalEarnings: string | number;
+    avatarUrl?: string | null;
+    bio?: string | null;
+    workPhotos?: MasterWorkPhoto[];
   };
   masterChatThread?: {
     updatedAt: string;

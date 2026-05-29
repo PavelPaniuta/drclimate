@@ -34,7 +34,17 @@ export interface MasterProfileExtended {
   workDayStart: number;
   workDayEnd: number;
   totalEarnings: string;
-  user: { id: string; name?: string; email: string; phone?: string; city?: string };
+  avatarUrl?: string | null;
+  workPhotos?: { id: string; url: string; caption?: string | null }[];
+  user: {
+    id: string;
+    name?: string;
+    email: string;
+    phone?: string;
+    address?: string;
+    telegram?: string;
+    city?: string;
+  };
 }
 
 export interface WeekDay {

@@ -19,6 +19,7 @@ import {
   AdminUpdateOrderDto,
 } from './dto/order.dto';
 import { OrderAuditService } from './order-audit.service';
+import { userContactSelect, masterProfilePublicSelect } from '../common/prisma-selects';
 import { calculateSettlementTotals, roundMoney } from './settlement.utils';
 import { MastersService } from '../masters/masters.service';
 import { CitiesService } from '../cities/cities.service';
@@ -447,8 +448,13 @@ export class OrdersService {
 
   private orderIncludes() {
     return {
-      client: { select: { id: true, name: true, email: true, phone: true } },
-      master: { select: { id: true, name: true, email: true, phone: true } },
+      client: { select: userContactSelect },
+      master: {
+        select: {
+          ...userContactSelect,
+          masterProfile: { select: masterProfilePublicSelect },
+        },
+      },
       settlement: {
         include: { expenseItems: { orderBy: { createdAt: 'asc' as const } } },
       },

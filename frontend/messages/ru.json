@@ -39,7 +39,20 @@
     "registerTitle": "Создать аккаунт",
     "noAccount": "Нет аккаунта?",
     "hasAccount": "Уже есть аккаунт?",
-    "loginError": "Неверный email или пароль"
+    "loginError": "Неверный email или пароль",
+    "address": "Адрес проживания",
+    "telegram": "Telegram"
+  },
+  "contacts": {
+    "name": "Имя",
+    "email": "Email",
+    "phone": "Телефон",
+    "address": "Адрес",
+    "telegram": "Telegram",
+    "city": "Город",
+    "masterFallback": "Мастер",
+    "masterContacts": "Контакты мастера",
+    "workPhotos": "Фото работ"
   },
   "client": {
     "title": "Кабинет клиента",
@@ -57,7 +70,12 @@
     "serviceType": "Тип услуги",
     "description": "Описание проблемы",
     "address": "Адрес",
-    "preferredTime": "Желаемое время"
+    "preferredTime": "Желаемое время",
+    "myProfile": "Мои контакты",
+    "profileHint": "Администратор видит эти данные при создании заявок. Мастер — после назначения.",
+    "editProfile": "Редактировать",
+    "profileSaved": "Контакты сохранены",
+    "addressPlaceholder": "Улица, дом, квартира"
   },
   "master": {
     "title": "Кабинет мастера",
@@ -151,7 +169,16 @@
     "adminLabel": "Админ",
     "youLabel": "Вы",
     "newMessage": "Новое",
-    "chatUnreadBanner": "У вас {count} новых сообщений от админа — открыть чат"
+    "chatUnreadBanner": "У вас {count} новых сообщений от админа — открыть чат",
+    "profileSection": "Профиль и контакты",
+    "profileSectionHint": "Клиент видит ваше фото и контакты после назначения на заявку.",
+    "uploadAvatar": "Загрузить фото",
+    "avatarHint": "JPG, PNG или WebP, до 5 МБ",
+    "bio": "О себе",
+    "bioPlaceholder": "Опыт, специализация…",
+    "workPhotosHint": "До 12 фото выполненных работ — клиент увидит в карточке заявки",
+    "addWorkPhoto": "Добавить фото",
+    "workPhotoCaption": "Подпись (необязательно)"
   },
   "admin": {
     "title": "Админ-панель",

@@ -12,6 +12,14 @@ export class UpdateMasterProfileDto {
 
   @IsOptional()
   @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  telegram?: string;
+
+  @IsOptional()
+  @IsString()
   serviceArea?: string;
 
   @IsOptional()

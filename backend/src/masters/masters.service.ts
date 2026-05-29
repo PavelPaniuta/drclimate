@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateMasterProfileDto, UpdateMasterWorkSettingsDto, UpdateAvailabilityDto } from './dto/master.dto';
+import { userContactSelect, masterProfilePublicSelect } from '../common/prisma-selects';
+import { UploadsService } from '../uploads/uploads.service';
 import {
   defaultScheduleTime,
   getOrderWorkDate,
@@ -9,21 +11,34 @@ import {
   startOfDay,
 } from './master-work.utils';
 
+const MAX_WORK_PHOTOS = 12;
+
 const orderInclude = {
-  client: { select: { id: true, name: true, email: true, phone: true } },
-  master: { select: { id: true, name: true, email: true, phone: true } },
+  client: { select: userContactSelect },
+  master: {
+    select: {
+      ...userContactSelect,
+      masterProfile: { select: masterProfilePublicSelect },
+    },
+  },
+};
+
+const profileInclude = {
+  user: { select: userContactSelect },
+  workPhotos: { orderBy: { sortOrder: 'asc' as const } },
 };
 
 @Injectable()
 export class MastersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploads: UploadsService,
+  ) {}
 
   async getProfile(userId: string) {
     const profile = await this.prisma.masterProfile.findUnique({
       where: { userId },
-      include: {
-        user: { select: { id: true, name: true, email: true, phone: true, city: true } },
-      },
+      include: profileInclude,
     });
     if (!profile) throw new NotFoundException('Master profile not found');
     return profile;
@@ -32,24 +47,62 @@ export class MastersService {
   async updateProfile(userId: string, dto: UpdateMasterProfileDto) {
     await this.getProfile(userId);
 
-    if (dto.name || dto.phone) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { name: dto.name, phone: dto.phone },
-      });
+    const userData: Record<string, string | undefined> = {};
+    if (dto.name !== undefined) userData.name = dto.name;
+    if (dto.phone !== undefined) userData.phone = dto.phone;
+    if (dto.address !== undefined) userData.address = dto.address;
+    if (dto.telegram !== undefined) userData.telegram = dto.telegram;
+
+    if (Object.keys(userData).length > 0) {
+      await this.prisma.user.update({ where: { id: userId }, data: userData });
     }
 
-    return this.prisma.masterProfile.update({
+    const profileData: Record<string, unknown> = {};
+    if (dto.serviceArea !== undefined) profileData.serviceArea = dto.serviceArea;
+    if (dto.bio !== undefined) profileData.bio = dto.bio;
+    if (dto.skills !== undefined) profileData.skills = dto.skills;
+
+    if (Object.keys(profileData).length > 0) {
+      await this.prisma.masterProfile.update({ where: { userId }, data: profileData });
+    }
+
+    return this.getProfile(userId);
+  }
+
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    const profile = await this.getProfile(userId);
+    const url = this.uploads.saveImage(file);
+    await this.prisma.masterProfile.update({
       where: { userId },
+      data: { avatarUrl: url },
+    });
+    return this.getProfile(userId);
+  }
+
+  async addWorkPhoto(userId: string, file: Express.Multer.File, caption?: string) {
+    const profile = await this.getProfile(userId);
+    if (profile.workPhotos.length >= MAX_WORK_PHOTOS) {
+      throw new BadRequestException(`Maximum ${MAX_WORK_PHOTOS} work photos`);
+    }
+    const url = this.uploads.saveImage(file);
+    const sortOrder = profile.workPhotos.length;
+    await this.prisma.masterWorkPhoto.create({
       data: {
-        serviceArea: dto.serviceArea,
-        bio: dto.bio,
-        skills: dto.skills,
-      },
-      include: {
-        user: { select: { id: true, name: true, email: true, phone: true, city: true } },
+        masterProfileId: profile.id,
+        url,
+        caption: caption?.trim() || null,
+        sortOrder,
       },
     });
+    return this.getProfile(userId);
+  }
+
+  async deleteWorkPhoto(userId: string, photoId: string) {
+    const profile = await this.getProfile(userId);
+    const photo = profile.workPhotos.find((p) => p.id === photoId);
+    if (!photo) throw new NotFoundException('Photo not found');
+    await this.prisma.masterWorkPhoto.delete({ where: { id: photoId } });
+    return this.getProfile(userId);
   }
 
   async updateWorkSettings(userId: string, dto: UpdateMasterWorkSettingsDto) {
@@ -60,9 +113,7 @@ export class MastersService {
     return this.prisma.masterProfile.update({
       where: { userId },
       data: dto,
-      include: {
-        user: { select: { id: true, name: true, email: true, phone: true, city: true } },
-      },
+      include: profileInclude,
     });
   }
 

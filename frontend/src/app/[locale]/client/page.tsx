@@ -8,6 +8,7 @@ import { getToken, getStoredUser } from '@/lib/auth';
 import { getSocket } from '@/lib/socket';
 import { Order } from '@/lib/types';
 import { ClientOrderCard } from '@/components/client/ClientOrderCard';
+import { ClientProfileSection } from '@/components/client/ClientProfileSection';
 import { ChatLauncherButton } from '@/components/chat/ChatLauncherButton';
 import { useClientOrderChatUnread } from '@/hooks/useClientOrderChatUnread';
 
@@ -87,6 +88,8 @@ export default function ClientDashboard() {
           </span>
         </div>
       )}
+
+      <ClientProfileSection />
 
       <h2 className="mb-4 text-lg font-semibold">{t('myRequests')}</h2>
       <div className="space-y-4">

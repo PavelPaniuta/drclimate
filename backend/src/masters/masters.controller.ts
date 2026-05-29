@@ -1,8 +1,27 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+
+const imageUpload = { storage: memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } };
 import { AuthGuard } from '@nestjs/passport';
 import { Role } from '@prisma/client';
 import { MastersService } from './masters.service';
-import { UpdateMasterProfileDto, UpdateMasterWorkSettingsDto, UpdateAvailabilityDto } from './dto/master.dto';
+import {
+  UpdateMasterProfileDto,
+  UpdateMasterWorkSettingsDto,
+  UpdateAvailabilityDto,
+} from './dto/master.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
@@ -21,6 +40,27 @@ export class MastersController {
   @Patch('profile')
   updateProfile(@CurrentUser() user: JwtPayload, @Body() dto: UpdateMasterProfileDto) {
     return this.mastersService.updateProfile(user.sub, dto);
+  }
+
+  @Post('profile/avatar')
+  @UseInterceptors(FileInterceptor('file', imageUpload))
+  uploadAvatar(@CurrentUser() user: JwtPayload, @UploadedFile() file: Express.Multer.File) {
+    return this.mastersService.uploadAvatar(user.sub, file);
+  }
+
+  @Post('profile/work-photos')
+  @UseInterceptors(FileInterceptor('file', imageUpload))
+  addWorkPhoto(
+    @CurrentUser() user: JwtPayload,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('caption') caption?: string,
+  ) {
+    return this.mastersService.addWorkPhoto(user.sub, file, caption);
+  }
+
+  @Delete('profile/work-photos/:photoId')
+  deleteWorkPhoto(@CurrentUser() user: JwtPayload, @Param('photoId') photoId: string) {
+    return this.mastersService.deleteWorkPhoto(user.sub, photoId);
   }
 
   @Patch('availability')

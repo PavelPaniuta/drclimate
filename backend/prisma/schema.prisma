@@ -62,6 +62,8 @@ model User {
   role      Role     @default(CLIENT)
   name      String?
   phone     String?
+  address   String?
+  telegram  String?
   city      String?
   isBanned  Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -88,14 +90,28 @@ model MasterProfile {
   serviceArea   String
   isOnline      Boolean  @default(false)
   bio           String?
+  avatarUrl     String?
   maxJobsPerDay Int      @default(3)
   workDayStart  Int      @default(9)
   workDayEnd    Int      @default(18)
   totalEarnings Decimal  @default(0) @db.Decimal(12, 2)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  workPhotos    MasterWorkPhoto[]
 
   @@index([serviceArea, isOnline])
+}
+
+model MasterWorkPhoto {
+  id              String        @id @default(uuid())
+  masterProfileId String
+  masterProfile   MasterProfile @relation(fields: [masterProfileId], references: [id], onDelete: Cascade)
+  url             String
+  caption         String?
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
+
+  @@index([masterProfileId, sortOrder])
 }
 
 model ServiceRequest {

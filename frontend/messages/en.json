@@ -39,7 +39,20 @@
     "registerTitle": "Create account",
     "noAccount": "No account?",
     "hasAccount": "Already have an account?",
-    "loginError": "Invalid email or password"
+    "loginError": "Invalid email or password",
+    "address": "Home address",
+    "telegram": "Telegram"
+  },
+  "contacts": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "telegram": "Telegram",
+    "city": "City",
+    "masterFallback": "Technician",
+    "masterContacts": "Technician contacts",
+    "workPhotos": "Work photos"
   },
   "client": {
     "title": "Client dashboard",
@@ -57,7 +70,12 @@
     "serviceType": "Service type",
     "description": "Description",
     "address": "Address",
-    "preferredTime": "Preferred time"
+    "preferredTime": "Preferred time",
+    "myProfile": "My contacts",
+    "profileHint": "Admin sees this when creating requests. Your technician sees it after assignment.",
+    "editProfile": "Edit",
+    "profileSaved": "Contacts saved",
+    "addressPlaceholder": "Street, building, apartment"
   },
   "master": {
     "title": "Technician dashboard",
@@ -151,7 +169,16 @@
     "adminLabel": "Admin",
     "youLabel": "You",
     "newMessage": "New",
-    "chatUnreadBanner": "You have {count} new message(s) from admin — open chat"
+    "chatUnreadBanner": "You have {count} new message(s) from admin — open chat",
+    "profileSection": "Profile & contacts",
+    "profileSectionHint": "Clients see your photo and contacts after you are assigned to a job.",
+    "uploadAvatar": "Upload photo",
+    "avatarHint": "JPG, PNG or WebP, max 5 MB",
+    "bio": "About you",
+    "bioPlaceholder": "Experience, specialization…",
+    "workPhotosHint": "Up to 12 photos of completed work — shown on the client's request card",
+    "addWorkPhoto": "Add photo",
+    "workPhotoCaption": "Caption (optional)"
   },
   "admin": {
     "title": "Admin panel",

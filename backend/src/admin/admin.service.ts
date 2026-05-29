@@ -20,6 +20,8 @@ export class AdminService {
         role: true,
         name: true,
         phone: true,
+        address: true,
+        telegram: true,
         city: true,
         isBanned: true,
         createdAt: true,

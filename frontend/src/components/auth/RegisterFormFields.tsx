@@ -23,6 +23,8 @@ export function RegisterFormFields({ onSwitchToLogin }: RegisterFormFieldsProps)
     password: '',
     name: '',
     phone: '',
+    address: '',
+    telegram: '',
     city: 'kyiv',
     role: 'CLIENT' as Role,
   });
@@ -98,6 +100,19 @@ export function RegisterFormFields({ onSwitchToLogin }: RegisterFormFieldsProps)
       <div>
         <label className="mb-1 block text-sm font-medium">{t('phone')}</label>
         <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">{t('address')}</label>
+        <input className="input" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">{t('telegram')}</label>
+        <input
+          className="input"
+          value={form.telegram}
+          onChange={(e) => setForm({ ...form, telegram: e.target.value })}
+          placeholder="@username"
+        />
       </div>
       <CitySelect label={t('city')} value={form.city} onChange={(city) => setForm({ ...form, city })} required />
       <button type="submit" className="btn-primary w-full" disabled={loading}>
