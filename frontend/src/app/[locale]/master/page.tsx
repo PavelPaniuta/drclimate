@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { api, ApiError } from '@/lib/api';
-import { getToken, getStoredUser } from '@/lib/auth';
+import { getToken } from '@/lib/auth';
 import { getSocket } from '@/lib/socket';
 import { MasterWorkboard, MasterTab } from '@/lib/master-types';
 import { Order } from '@/lib/types';
@@ -22,6 +21,7 @@ import { useMasterNotifications } from '@/hooks/useMasterNotifications';
 import { useMasterChatUnread } from '@/hooks/useMasterChatUnread';
 import { useMasterOrderChatUnread } from '@/hooks/useMasterOrderChatUnread';
 import { useMasterIncomingNew } from '@/hooks/useMasterIncomingNew';
+import { useRequireAuth } from '@/hooks/useAuthRedirect';
 
 function orderWorkDate(order: Order): Date {
   if (order.scheduledAt) return new Date(order.scheduledAt);
@@ -49,7 +49,6 @@ function ordersOnDate(orders: Order[], dateStr: string): Order[] {
 export default function MasterDashboard() {
   const t = useTranslations('master');
   const tc = useTranslations('common');
-  const router = useRouter();
   const [board, setBoard] = useState<MasterWorkboard | null>(null);
   const [tab, setTab] = useState<MasterTab>('incoming');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -89,13 +88,12 @@ export default function MasterDashboard() {
     markSeen: markIncomingSeen,
   } = useMasterIncomingNew(incomingList, loadData);
 
+  const authorized = useRequireAuth('MASTER');
+
   useEffect(() => {
-    const user = getStoredUser();
+    if (!authorized) return;
     const token = getToken();
-    if (!user || user.role !== 'MASTER' || !token) {
-      router.push('/uk/login');
-      return;
-    }
+    if (!token) return;
 
     loadData();
 
@@ -107,7 +105,7 @@ export default function MasterDashboard() {
       socket.off('order_update');
       socket.off('order_accepted');
     };
-  }, [router, loadData]);
+  }, [authorized, loadData]);
 
   useEffect(() => {
     if (newIncomingCount > 0) {

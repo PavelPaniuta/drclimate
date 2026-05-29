@@ -26,6 +26,10 @@ export function getStoredUser(): User | null {
   return raw ? JSON.parse(raw) : null;
 }
 
+export function authHomePath(locale: string): string {
+  return `/${locale}`;
+}
+
 export function dashboardPath(role: string, locale: string): string {
   switch (role) {
     case 'MASTER':

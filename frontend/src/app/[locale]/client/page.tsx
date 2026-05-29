@@ -2,31 +2,28 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { getToken, getStoredUser } from '@/lib/auth';
+import { getToken } from '@/lib/auth';
 import { getSocket } from '@/lib/socket';
 import { Order } from '@/lib/types';
 import { ClientOrderCard } from '@/components/client/ClientOrderCard';
 import { ClientProfileSection } from '@/components/client/ClientProfileSection';
 import { ChatLauncherButton } from '@/components/chat/ChatLauncherButton';
 import { useClientOrderChatUnread } from '@/hooks/useClientOrderChatUnread';
+import { useRequireAuth } from '@/hooks/useAuthRedirect';
 
 export default function ClientDashboard() {
   const t = useTranslations('client');
   const ts = useTranslations('serviceType');
-  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const { total: chatUnread, byOrder, refresh: refreshChatUnread } = useClientOrderChatUnread(true);
+  const authorized = useRequireAuth('CLIENT');
 
   useEffect(() => {
-    const user = getStoredUser();
+    if (!authorized) return;
     const token = getToken();
-    if (!user || user.role !== 'CLIENT' || !token) {
-      router.push('/uk/login');
-      return;
-    }
+    if (!token) return;
 
     api<Order[]>('/orders/my', {}, token)
       .then(setOrders)
@@ -55,7 +52,7 @@ export default function ClientDashboard() {
       socket.off('order_accepted');
       socket.off('order_chat_unread');
     };
-  }, [router, refreshChatUnread]);
+  }, [authorized, refreshChatUnread]);
 
   if (loading) return <div className="p-8 text-center">...</div>;
 

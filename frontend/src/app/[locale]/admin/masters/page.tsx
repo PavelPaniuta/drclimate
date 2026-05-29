@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { getToken, getStoredUser } from '@/lib/auth';
+import { getToken } from '@/lib/auth';
+import { useRequireAuth } from '@/hooks/useAuthRedirect';
 import { api } from '@/lib/api';
 import { City } from '@/lib/cities';
 import { AdminMastersPanel } from '@/components/admin/AdminMastersPanel';
@@ -12,19 +12,16 @@ import { useAdminChatUnread } from '@/contexts/AdminChatUnreadContext';
 
 export default function AdminMastersPage() {
   const t = useTranslations('admin');
-  const router = useRouter();
   const [cities, setCities] = useState<City[]>([]);
   const { refresh } = useAdminChatUnread();
+  const authorized = useRequireAuth('ADMIN');
 
   useEffect(() => {
-    const user = getStoredUser();
+    if (!authorized) return;
     const token = getToken();
-    if (!user || user.role !== 'ADMIN' || !token) {
-      router.push('/uk/login');
-      return;
-    }
+    if (!token) return;
     api<City[]>('/cities/manage', {}, token).then(setCities);
-  }, [router]);
+  }, [authorized]);
 
   return (
     <AdminPageShell title={t('masters')} subtitle={t('mastersHint')} showUnreadBanner={false}>

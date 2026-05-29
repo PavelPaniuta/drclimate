@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { clearAuth, getStoredUser, dashboardPath } from '@/lib/auth';
+import { authHomePath, clearAuth, dashboardPath, getStoredUser } from '@/lib/auth';
 import { User } from '@/lib/types';
 
 function isHomePath(pathname: string, locale: string) {
@@ -23,49 +23,39 @@ export function Header() {
     setUser(getStoredUser());
   }, [pathname]);
 
+  const logoHref = user ? dashboardPath(user.role, locale) : authHomePath(locale);
+
   function handleLogout() {
     clearAuth();
     setUser(null);
-    window.location.href = `/${locale}`;
+    window.location.href = authHomePath(locale);
   }
 
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:py-4">
-        <Link href={`/${locale}`} className="text-lg font-bold text-brand-700 sm:text-xl">
+        <Link href={logoHref} className="text-lg font-bold text-brand-700 sm:text-xl">
           {t('common.appName')}
         </Link>
         <nav className="flex flex-wrap items-center justify-end gap-2 sm:gap-4">
           <LanguageSwitcher />
           {user ? (
-            <>
-              <Link
-                href={dashboardPath(user.role, locale)}
-                className="text-xs text-slate-600 hover:text-brand-600 sm:text-sm"
-              >
-                {user.role === 'MASTER'
-                  ? t('nav.masterDashboard')
-                  : user.role === 'ADMIN'
-                    ? t('nav.adminDashboard')
-                    : t('nav.clientDashboard')}
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-xs text-slate-600 hover:text-red-600 sm:text-sm"
-              >
-                {t('common.logout')}
-              </button>
-            </>
+            <button
+              onClick={handleLogout}
+              className="text-xs text-slate-600 hover:text-red-600 sm:text-sm"
+            >
+              {t('common.logout')}
+            </button>
           ) : (
             !onHome && (
               <>
                 <Link
-                  href={`/${locale}/login`}
+                  href={authHomePath(locale)}
                   className="text-xs text-slate-600 hover:text-brand-600 sm:text-sm"
                 >
                   {t('common.login')}
                 </Link>
-                <Link href={`/${locale}/register`} className="btn-primary text-xs sm:text-sm">
+                <Link href={authHomePath(locale)} className="btn-primary text-xs sm:text-sm">
                   {t('common.register')}
                 </Link>
               </>

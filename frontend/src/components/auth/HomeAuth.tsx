@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import clsx from 'clsx';
 import { LoginForm } from './LoginForm';
 import { RegisterFormFields } from './RegisterFormFields';
+import { useRedirectIfAuthenticated } from '@/hooks/useAuthRedirect';
 
 type AuthTab = 'login' | 'register';
 
@@ -12,6 +13,8 @@ export function HomeAuth() {
   const t = useTranslations('home');
   const tc = useTranslations('common');
   const [tab, setTab] = useState<AuthTab>('login');
+
+  useRedirectIfAuthenticated();
 
   return (
     <div className="flex min-h-[calc(100vh-65px)] flex-col items-center justify-center px-4 py-8 sm:py-12">

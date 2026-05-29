@@ -2,16 +2,16 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { api } from '@/lib/api';
-import { getToken, getStoredUser } from '@/lib/auth';
+import { getToken } from '@/lib/auth';
 import { Order } from '@/lib/types';
 import { City, findCityBySlug, getCityName } from '@/lib/cities';
 import { StatusBadge } from '@/components/StatusBadge';
 import { AdminOrderEditModal } from '@/components/admin/AdminOrderEditModal';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { ORDER_STATUS_SORT_ORDER } from '@/lib/order-status';
+import { useRequireAuth } from '@/hooks/useAuthRedirect';
 
 interface AdminUser {
   id: string;
@@ -29,7 +29,6 @@ export default function AdminDashboard() {
   const ts = useTranslations('serviceType');
   const ta = useTranslations('auth');
   const locale = useLocale();
-  const router = useRouter();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -37,16 +36,14 @@ export default function AdminDashboard() {
   const [cityFilter, setCityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const authorized = useRequireAuth('ADMIN');
 
   useEffect(() => {
-    const user = getStoredUser();
+    if (!authorized) return;
     const token = getToken();
-    if (!user || user.role !== 'ADMIN' || !token) {
-      router.push('/uk/login');
-      return;
-    }
+    if (!token) return;
     loadData(token);
-  }, [router]);
+  }, [authorized]);
 
   async function loadData(token: string) {
     const [u, o, c, cAll] = await Promise.all([
