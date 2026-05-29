@@ -148,6 +148,7 @@
     "createdAt": "Створено",
     "address": "Адреса",
     "client": "Клієнт",
+    "clientContactsAfterAccept": "Контакти клієнта з’являться після прийняття заявки",
     "description": "Опис",
     "actions": "Дії",
     "masterNotes": "Мої нотатки",

@@ -20,6 +20,7 @@ import {
 } from './dto/order.dto';
 import { OrderAuditService } from './order-audit.service';
 import { userContactSelect, masterProfilePublicSelect } from '../common/prisma-selects';
+import { redactClientContactsForMaster, redactOrdersForMaster } from '../common/order-privacy';
 import { calculateSettlementTotals, roundMoney } from './settlement.utils';
 import { MastersService } from '../masters/masters.service';
 import { CitiesService } from '../cities/cities.service';
@@ -107,7 +108,7 @@ export class OrdersService {
     const profile = await this.prisma.masterProfile.findUnique({ where: { userId: masterId } });
     if (!profile) throw new NotFoundException('Master profile not found');
 
-    return this.prisma.serviceRequest.findMany({
+    const orders = await this.prisma.serviceRequest.findMany({
       where: {
         status: OrderStatus.PENDING,
         masterId: null,
@@ -116,6 +117,7 @@ export class OrdersService {
       include: this.orderIncludes(),
       orderBy: { createdAt: 'desc' },
     });
+    return redactOrdersForMaster(orders, masterId);
   }
 
   async findAssignedForMaster(masterId: string) {
@@ -152,6 +154,7 @@ export class OrdersService {
         profile != null &&
         order.city === profile.serviceArea;
       if (!isOwn && !isPendingInArea) throw new ForbiddenException();
+      return redactClientContactsForMaster(order, userId);
     }
 
     return order;

@@ -58,6 +58,7 @@ export interface Order {
   price?: number;
   createdAt: string;
   updatedAt?: string;
+  masterId?: string | null;
   client?: OrderParty;
   master?: OrderParty;
   comments?: OrderComment[];

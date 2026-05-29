@@ -11,6 +11,7 @@ import { OrderChat } from '@/components/OrderChat';
 import { OrderSettlementPanel } from '@/components/master/OrderSettlementPanel';
 import { ContactInfoCard } from '@/components/ContactInfoCard';
 import { CityLabel } from '@/components/CitySelect';
+import { applyMasterOrderPrivacy, canMasterSeeClientContacts } from '@/lib/order-privacy';
 import { SettlementFormData, buildCompletePayload, emptySettlementForm } from '@/lib/settlement';
 
 interface Props {
@@ -53,7 +54,7 @@ export function MasterOrderDetail({ orderId, onClose, onUpdated, onAccept, onUnr
 
     async function load() {
       const o = await api<Order>(`/orders/${orderId}`, {}, token!);
-      setOrder(o);
+      setOrder(applyMasterOrderPrivacy(o));
       setNotes(o.masterNotes || '');
       const when = o.scheduledAt || o.preferredTime;
       setScheduleAt(when ? when.slice(0, 16) : '');
@@ -65,8 +66,9 @@ export function MasterOrderDetail({ orderId, onClose, onUpdated, onAccept, onUnr
     socket.emit('join_order', { orderId });
     socket.on('order_update', (updated: Order) => {
       if (updated?.id === orderId) {
-        setOrder(updated);
-        setNotes(updated.masterNotes || '');
+        const safe = applyMasterOrderPrivacy(updated);
+        setOrder(safe);
+        setNotes(safe.masterNotes || '');
       }
     });
     socket.on('new_comment', (c: OrderComment) => {
@@ -168,9 +170,14 @@ export function MasterOrderDetail({ orderId, onClose, onUpdated, onAccept, onUnr
                     {order.address}, <CityLabel slug={order.city} />
                   </p>
                 </div>
-                {order.client && (
+                {canMasterSeeClientContacts(order) && order.client && (
                   <div className="sm:col-span-2">
                     <ContactInfoCard person={order.client} title={t('client')} />
+                  </div>
+                )}
+                {!canMasterSeeClientContacts(order) && order.status === 'PENDING' && (
+                  <div className="sm:col-span-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    {t('clientContactsAfterAccept')}
                   </div>
                 )}
                 <div className="sm:col-span-2">

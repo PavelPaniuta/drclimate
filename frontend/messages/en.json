@@ -148,6 +148,7 @@
     "createdAt": "Created",
     "address": "Address",
     "client": "Client",
+    "clientContactsAfterAccept": "Client contacts will appear after you accept the job",
     "description": "Description",
     "actions": "Actions",
     "masterNotes": "My notes",

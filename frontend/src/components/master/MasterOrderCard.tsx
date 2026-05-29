@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { Order } from '@/lib/types';
 import { StatusBadge } from '@/components/StatusBadge';
 import { CityLabel } from '@/components/CitySelect';
+import { canMasterSeeClientContacts } from '@/lib/order-privacy';
 
 interface Props {
   order: Order;
@@ -79,7 +80,7 @@ export function MasterOrderCard({ order, onOpen, onAccept, unreadCount = 0, isNe
       {profit != null && order.status === 'COMPLETED' && (
         <p className="mt-1 text-sm font-medium text-green-700">💰 {profit} ₴</p>
       )}
-      {order.client && (
+      {canMasterSeeClientContacts(order) && order.client && (
         <p className="mt-1 text-sm text-slate-500">
           👤 {order.client.name || order.client.email}
         </p>

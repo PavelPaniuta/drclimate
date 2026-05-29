@@ -10,6 +10,7 @@ import {
   isSameDay,
   startOfDay,
 } from './master-work.utils';
+import { redactClientContactsForMaster, redactOrdersForMaster } from '../common/order-privacy';
 
 const MAX_WORK_PHOTOS = 12;
 
@@ -215,10 +216,13 @@ export class MastersService {
       .filter((o) => isSameDay(getOrderWorkDate(o), today))
       .reduce((sum, o) => sum + Number(o.settlement?.netProfit ?? o.price ?? 0), 0);
 
+    const incomingSafe = redactOrdersForMaster(incoming, userId);
+    const assignedSafe = assigned.map((o) => redactClientContactsForMaster(o, userId));
+
     return {
       profile,
       stats: {
-        incoming: incoming.length,
+        incoming: incomingSafe.length,
         active: active.length,
         completed: completed.length,
         today: todayJobs.length,
@@ -230,12 +234,12 @@ export class MastersService {
       todayCapacity,
       weekDays,
       orders: {
-        incoming,
+        incoming: incomingSafe,
         today: todayJobs,
         active,
         completed,
         cancelled,
-        all: assigned,
+        all: assignedSafe,
       },
     };
   }

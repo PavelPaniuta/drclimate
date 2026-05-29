@@ -148,6 +148,7 @@
     "createdAt": "Создано",
     "address": "Адрес",
     "client": "Клиент",
+    "clientContactsAfterAccept": "Контакты клиента появятся после принятия заявки",
     "description": "Описание",
     "actions": "Действия",
     "masterNotes": "Мои заметки",
