@@ -18,6 +18,7 @@ import { ChatLauncherButton } from '@/components/chat/ChatLauncherButton';
 import { PwaRegister } from '@/components/PwaRegister';
 import { useMasterNotifications } from '@/hooks/useMasterNotifications';
 import { useMasterChatUnread } from '@/hooks/useMasterChatUnread';
+import { useMasterOrderChatUnread } from '@/hooks/useMasterOrderChatUnread';
 
 function orderWorkDate(order: Order): Date {
   if (order.scheduledAt) return new Date(order.scheduledAt);
@@ -53,6 +54,11 @@ export default function MasterDashboard() {
   const [error, setError] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
   const { count: chatUnread, refresh: refreshChatUnread } = useMasterChatUnread(true, chatOpen);
+  const {
+    total: orderChatUnread,
+    byOrder: orderChatByOrder,
+    refresh: refreshOrderChatUnread,
+  } = useMasterOrderChatUnread(true, openOrderId);
 
   const loadData = useCallback(async () => {
     const token = getToken();
@@ -176,6 +182,14 @@ export default function MasterDashboard() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ChatLauncherButton
+            label={t('clientChats')}
+            count={orderChatUnread}
+            onClick={() => {
+              const first = Object.entries(orderChatByOrder).find(([, n]) => n > 0);
+              if (first) setOpenOrderId(first[0]);
+            }}
+          />
+          <ChatLauncherButton
             label={t('adminChat')}
             count={chatUnread}
             active={chatOpen}
@@ -195,14 +209,30 @@ export default function MasterDashboard() {
         </div>
       </div>
 
+      {orderChatUnread > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            const first = Object.entries(orderChatByOrder).find(([, n]) => n > 0);
+            if (first) setOpenOrderId(first[0]);
+          }}
+          className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-800 transition hover:bg-red-100"
+        >
+          <span>{t('orderChatUnreadBanner', { count: orderChatUnread })}</span>
+          <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-red-500 px-2 text-xs font-bold text-white">
+            {orderChatUnread > 99 ? '99+' : orderChatUnread}
+          </span>
+        </button>
+      )}
+
       {chatUnread > 0 && !chatOpen && (
         <button
           type="button"
           onClick={() => setChatOpen(true)}
-          className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-800 transition hover:bg-red-100"
+          className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm font-medium text-amber-900 transition hover:bg-amber-100"
         >
           <span>{t('chatUnreadBanner', { count: chatUnread })}</span>
-          <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-red-500 px-2 text-xs font-bold text-white">
+          <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-amber-500 px-2 text-xs font-bold text-white">
             {chatUnread > 99 ? '99+' : chatUnread}
           </span>
         </button>
@@ -307,6 +337,7 @@ export default function MasterDashboard() {
           <MasterOrderCard
             key={order.id}
             order={order}
+            unreadCount={orderChatByOrder[order.id] ?? 0}
             onOpen={() => setOpenOrderId(order.id)}
             onAccept={
               tab === 'incoming'
@@ -319,9 +350,13 @@ export default function MasterDashboard() {
 
       <MasterOrderDetail
         orderId={openOrderId}
-        onClose={() => setOpenOrderId(null)}
+        onClose={() => {
+          setOpenOrderId(null);
+          void refreshOrderChatUnread();
+        }}
         onUpdated={loadData}
         onAccept={acceptOrder}
+        onUnreadChange={refreshOrderChatUnread}
       />
     </div>
   );

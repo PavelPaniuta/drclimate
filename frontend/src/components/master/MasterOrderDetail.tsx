@@ -16,6 +16,7 @@ interface Props {
   onClose: () => void;
   onUpdated: () => void;
   onAccept?: (id: string) => Promise<void>;
+  onUnreadChange?: () => void;
 }
 
 function fmt(iso: string | undefined, locale: string) {
@@ -29,7 +30,7 @@ function fmt(iso: string | undefined, locale: string) {
   });
 }
 
-export function MasterOrderDetail({ orderId, onClose, onUpdated, onAccept }: Props) {
+export function MasterOrderDetail({ orderId, onClose, onUpdated, onAccept, onUnreadChange }: Props) {
   const t = useTranslations('master');
   const ts = useTranslations('serviceType');
   const tc = useTranslations('common');
@@ -314,7 +315,7 @@ export function MasterOrderDetail({ orderId, onClose, onUpdated, onAccept }: Pro
               {order.master && order.status !== 'PENDING' && (
                 <section>
                   <h3 className="mb-2 text-sm font-semibold">{t('clientChat')}</h3>
-                  <OrderChat orderId={order.id} />
+                  <OrderChat orderId={order.id} onUnreadChange={onUnreadChange} />
                 </section>
               )}
             </div>

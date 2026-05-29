@@ -78,6 +78,15 @@ export class EventsGateway implements OnGatewayConnection {
     this.server.to(`order:${orderId}`).emit('new_message', message);
   }
 
+  emitOrderChatUnread(orderId: string, clientId: string, masterId: string | null) {
+    const payload = { orderId, at: Date.now() };
+    this.server.to(`user:${clientId}`).emit('order_chat_unread', payload);
+    if (masterId) {
+      this.server.to(`user:${masterId}`).emit('order_chat_unread', payload);
+    }
+    this.server.to(`order:${orderId}`).emit('order_chat_unread', payload);
+  }
+
   emitOrderComment(orderId: string, comment: unknown) {
     this.server.to(`order:${orderId}`).emit('new_comment', comment);
   }

@@ -113,9 +113,11 @@ model ServiceRequest {
   scheduledAt   DateTime?
   masterNotes   String?
   status        OrderStatus     @default(CREATED)
-  price         Decimal?        @db.Decimal(12, 2)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  price              Decimal?  @db.Decimal(12, 2)
+  clientLastReadAt   DateTime?
+  masterLastReadAt   DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   messages   Message[]
   comments   OrderComment[]

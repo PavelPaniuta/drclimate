@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
+import clsx from 'clsx';
 import { Order } from '@/lib/types';
 import { StatusBadge } from '@/components/StatusBadge';
 
@@ -8,6 +9,7 @@ interface Props {
   order: Order;
   onOpen: () => void;
   onAccept?: () => void;
+  unreadCount?: number;
 }
 
 function formatDateTime(iso: string | undefined, locale: string) {
@@ -20,7 +22,7 @@ function formatDateTime(iso: string | undefined, locale: string) {
   });
 }
 
-export function MasterOrderCard({ order, onOpen, onAccept }: Props) {
+export function MasterOrderCard({ order, onOpen, onAccept, unreadCount = 0 }: Props) {
   const t = useTranslations('master');
   const ts = useTranslations('serviceType');
   const tc = useTranslations('common');
@@ -30,7 +32,10 @@ export function MasterOrderCard({ order, onOpen, onAccept }: Props) {
 
   return (
     <div
-      className="card cursor-pointer border-l-4 border-l-brand-500 transition hover:shadow-md"
+      className={clsx(
+        'card cursor-pointer border-l-4 transition hover:shadow-md',
+        unreadCount > 0 ? 'border-l-red-500 ring-2 ring-red-100' : 'border-l-brand-500',
+      )}
       onClick={onOpen}
       onKeyDown={(e) => e.key === 'Enter' && onOpen()}
       role="button"
@@ -41,7 +46,14 @@ export function MasterOrderCard({ order, onOpen, onAccept }: Props) {
           <p className="font-semibold text-slate-900">{ts(order.serviceType as 'AC_REPAIR')}</p>
           {when && <p className="text-sm text-brand-700">📅 {when}</p>}
         </div>
-        <StatusBadge status={order.status} />
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+          <StatusBadge status={order.status} />
+        </div>
       </div>
 
       <p className="text-sm text-slate-600 line-clamp-2">{order.description}</p>

@@ -7,8 +7,9 @@ import { api } from '@/lib/api';
 import { getToken, getStoredUser } from '@/lib/auth';
 import { getSocket } from '@/lib/socket';
 import { Order } from '@/lib/types';
-import { StatusBadge } from '@/components/StatusBadge';
-import { OrderChat } from '@/components/OrderChat';
+import { ClientOrderCard } from '@/components/client/ClientOrderCard';
+import { ChatLauncherButton } from '@/components/chat/ChatLauncherButton';
+import { useClientOrderChatUnread } from '@/hooks/useClientOrderChatUnread';
 
 export default function ClientDashboard() {
   const t = useTranslations('client');
@@ -16,6 +17,7 @@ export default function ClientDashboard() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const { total: chatUnread, byOrder, refresh: refreshChatUnread } = useClientOrderChatUnread(true);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -43,36 +45,60 @@ export default function ClientDashboard() {
     });
     socket.on('order_accepted', (order: Order) => {
       setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)));
+      void refreshChatUnread();
     });
+    socket.on('order_chat_unread', () => void refreshChatUnread());
 
     return () => {
       socket.off('order_update');
       socket.off('order_accepted');
+      socket.off('order_chat_unread');
     };
-  }, [router]);
+  }, [router, refreshChatUnread]);
 
   if (loading) return <div className="p-8 text-center">...</div>;
 
+  const firstUnreadOrderId = Object.entries(byOrder).find(([, n]) => n > 0)?.[0];
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-2 text-2xl font-bold">{t('title')}</h1>
-      <p className="mb-8 text-slate-500">{t('viewOnlyHint')}</p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold sm:text-2xl">{t('title')}</h1>
+          <p className="mt-1 text-slate-500">{t('viewOnlyHint')}</p>
+        </div>
+        {chatUnread > 0 && (
+          <ChatLauncherButton
+            label={t('orderChats')}
+            count={chatUnread}
+            onClick={() => {
+              const el = document.getElementById(`order-${firstUnreadOrderId}`);
+              el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}
+          />
+        )}
+      </div>
+
+      {chatUnread > 0 && (
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+          <span>{t('chatUnreadBanner', { count: chatUnread })}</span>
+          <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-red-500 px-2 text-xs font-bold text-white">
+            {chatUnread > 99 ? '99+' : chatUnread}
+          </span>
+        </div>
+      )}
 
       <h2 className="mb-4 text-lg font-semibold">{t('myRequests')}</h2>
       <div className="space-y-4">
         {orders.length === 0 && <p className="text-slate-500">{t('noOrders')}</p>}
         {orders.map((order) => (
-          <div key={order.id} className="card">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="font-medium">{ts(order.serviceType as 'AC_REPAIR')}</span>
-              <StatusBadge status={order.status} />
-            </div>
-            <p className="text-sm text-slate-600">{order.description}</p>
-            <p className="mt-1 text-sm text-slate-500">{order.address}, {order.city}</p>
-            <p className="mt-2 text-sm">
-              {t('assignedMaster')}: {order.master?.name || t('noMaster')}
-            </p>
-            {order.master && <OrderChat orderId={order.id} />}
+          <div key={order.id} id={`order-${order.id}`}>
+            <ClientOrderCard
+              order={order}
+              serviceTypeLabel={ts(order.serviceType as 'AC_REPAIR')}
+              unreadCount={byOrder[order.id] ?? 0}
+              onUnreadChange={refreshChatUnread}
+            />
           </div>
         ))}
       </div>

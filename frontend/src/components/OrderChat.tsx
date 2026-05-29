@@ -1,37 +1,65 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import clsx from 'clsx';
 import { api } from '@/lib/api';
-import { getToken } from '@/lib/auth';
+import { getToken, getStoredUser } from '@/lib/auth';
 import { getSocket } from '@/lib/socket';
 import { Message } from '@/lib/types';
+import { appendOrderMessage } from '@/lib/order-chat-messages';
 
-export function OrderChat({ orderId }: { orderId: string }) {
+type Props = {
+  orderId: string;
+  onUnreadChange?: () => void;
+};
+
+export function OrderChat({ orderId, onUnreadChange }: Props) {
   const t = useTranslations('client');
   const tc = useTranslations('common');
   const [messages, setMessages] = useState<Message[]>([]);
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
+  const [newIncomingIds, setNewIncomingIds] = useState<Set<string>>(new Set());
+  const user = getStoredUser();
+
+  const loadMessages = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+    setLoading(true);
+    try {
+      const data = await api<Message[]>(`/orders/${orderId}/messages`, {}, token);
+      setMessages(data);
+      setNewIncomingIds(new Set());
+      onUnreadChange?.();
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId, onUnreadChange]);
 
   useEffect(() => {
+    void loadMessages();
+
     const token = getToken();
     if (!token) return;
 
-    api<Message[]>(`/orders/${orderId}/messages`, {}, token)
-      .then(setMessages)
-      .finally(() => setLoading(false));
-
     const socket = getSocket(token);
     socket.emit('join_order', { orderId });
-    socket.on('new_message', (msg: Message) => {
-      if (msg) setMessages((prev) => [...prev, msg]);
-    });
 
-    return () => {
-      socket.off('new_message');
+    const onMessage = (msg: Message) => {
+      if (!msg?.id) return;
+      setMessages((prev) => appendOrderMessage(prev, msg));
+      if (msg.sender.id !== user?.id) {
+        setNewIncomingIds((prev) => new Set(prev).add(msg.id));
+        onUnreadChange?.();
+      }
     };
-  }, [orderId]);
+
+    socket.on('new_message', onMessage);
+    return () => {
+      socket.off('new_message', onMessage);
+    };
+  }, [orderId, loadMessages, onUnreadChange, user?.id]);
 
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
@@ -43,7 +71,7 @@ export function OrderChat({ orderId }: { orderId: string }) {
       { method: 'POST', body: JSON.stringify({ content }) },
       token,
     );
-    setMessages((prev) => [...prev, msg]);
+    setMessages((prev) => appendOrderMessage(prev, msg));
     setContent('');
   }
 
@@ -54,12 +82,32 @@ export function OrderChat({ orderId }: { orderId: string }) {
       <h4 className="mb-2 font-medium">{t('chat')}</h4>
       <div className="mb-3 max-h-48 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-3">
         {messages.length === 0 && <p className="text-sm text-slate-400">—</p>}
-        {messages.map((m) => (
-          <div key={m.id} className="text-sm">
-            <span className="font-medium text-brand-700">{m.sender.name || m.sender.role}: </span>
-            {m.content}
-          </div>
-        ))}
+        {messages.map((m) => {
+          const isOwn = m.sender.id === user?.id;
+          const isNew = newIncomingIds.has(m.id);
+          return (
+            <div
+              key={m.id}
+              className={clsx(
+                'rounded-lg px-2 py-1.5 text-sm',
+                isOwn ? 'ml-4 bg-brand-50 text-brand-900' : 'mr-4 bg-white text-slate-800',
+                isNew && !isOwn && 'ring-2 ring-red-400 ring-offset-1',
+              )}
+            >
+              <div className="mb-0.5 flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-500">
+                  {m.sender.name || m.sender.role}
+                </span>
+                {isNew && !isOwn && (
+                  <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                    {t('newMessage')}
+                  </span>
+                )}
+              </div>
+              {m.content}
+            </div>
+          );
+        })}
       </div>
       <form onSubmit={sendMessage} className="flex gap-2">
         <input
