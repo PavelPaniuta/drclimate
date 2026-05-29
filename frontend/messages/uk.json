@@ -126,7 +126,8 @@
     "adminChatPlaceholder": "Написати адміну...",
     "adminLabel": "Адмін",
     "youLabel": "Ви",
-    "newMessage": "Нове"
+    "newMessage": "Нове",
+    "chatUnreadBanner": "У вас {count} нових повідомлень від адміна — відкрити чат"
   },
   "admin": {
     "title": "Адмін-панель",
@@ -172,7 +173,8 @@
     "navCreateOrder": "Нова заявка",
     "navCities": "Міста",
     "navMasters": "Чат",
-    "newMessage": "Нове"
+    "newMessage": "Нове",
+    "chatUnreadBanner": "У вас {count} нових повідомлень у чаті з майстрами — відкрити чат"
   },
   "orderStatus": {
     "CREATED": "Створено",

@@ -10,7 +10,7 @@ import { Order } from '@/lib/types';
 import { City, findCityBySlug, getCityName } from '@/lib/cities';
 import { StatusBadge } from '@/components/StatusBadge';
 import { AdminOrderEditModal } from '@/components/admin/AdminOrderEditModal';
-import { AdminNav } from '@/components/admin/AdminNav';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
 
 interface AdminUser {
   id: string;
@@ -106,10 +106,7 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
-      <h1 className="mb-4 text-xl font-bold sm:text-2xl">{t('title')}</h1>
-      <AdminNav />
-
+    <AdminPageShell title={t('title')}>
       <div className="mb-8 grid gap-3 sm:grid-cols-3">
         <div className="card border-l-4 border-l-amber-400">
           <p className="text-xs uppercase text-slate-500">{t('statPending')}</p>
@@ -251,6 +248,6 @@ export default function AdminDashboard() {
           }}
         />
       )}
-    </div>
+    </AdminPageShell>
   );
 }

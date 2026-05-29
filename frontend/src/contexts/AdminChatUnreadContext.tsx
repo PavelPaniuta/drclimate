@@ -1,28 +1,41 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { api } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { getSocket } from '@/lib/socket';
 import { parseMasterChatPayload } from '@/lib/chat-messages';
 
-export function useMasterChatUnread(enabled = true, chatOpen = false) {
-  const [count, setCount] = useState(0);
+type AdminChatUnreadContextValue = {
+  total: number;
+  refresh: () => Promise<void>;
+};
+
+const AdminChatUnreadContext = createContext<AdminChatUnreadContextValue | null>(null);
+
+export function AdminChatUnreadProvider({ children }: { children: ReactNode }) {
+  const [total, setTotal] = useState(0);
 
   const refresh = useCallback(async () => {
-    if (!enabled) return;
     const token = getToken();
     if (!token) return;
     try {
-      const data = await api<{ count: number }>('/masters/admin-chat/unread', {}, token);
-      setCount(data.count ?? 0);
+      const data = await api<{ total: number }>('/admin/chat/unread', {}, token);
+      setTotal(data.total ?? 0);
     } catch {
-      setCount(0);
+      setTotal(0);
     }
-  }, [enabled]);
+  }, []);
 
   useEffect(() => {
-    if (!enabled) return;
     void refresh();
     const token = getToken();
     if (!token) return;
@@ -30,15 +43,11 @@ export function useMasterChatUnread(enabled = true, chatOpen = false) {
     const socket = getSocket(token);
 
     const onMessage = (payload: unknown) => {
-      if (chatOpen) {
-        void refresh();
-        return;
-      }
       const msg = parseMasterChatPayload(
         payload as Parameters<typeof parseMasterChatPayload>[0],
       );
-      if (msg?.sender.role === 'ADMIN') {
-        setCount((n) => n + 1);
+      if (msg?.sender.role === 'MASTER') {
+        setTotal((n) => n + 1);
       }
       void refresh();
     };
@@ -63,7 +72,17 @@ export function useMasterChatUnread(enabled = true, chatOpen = false) {
       document.removeEventListener('visibilitychange', onVisible);
       clearInterval(interval);
     };
-  }, [enabled, chatOpen, refresh]);
+  }, [refresh]);
 
-  return { count, refresh };
+  const value = useMemo(() => ({ total, refresh }), [total, refresh]);
+
+  return <AdminChatUnreadContext.Provider value={value}>{children}</AdminChatUnreadContext.Provider>;
+}
+
+export function useAdminChatUnread() {
+  const ctx = useContext(AdminChatUnreadContext);
+  if (!ctx) {
+    throw new Error('useAdminChatUnread must be used within AdminChatUnreadProvider');
+  }
+  return ctx;
 }

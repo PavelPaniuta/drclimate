@@ -126,7 +126,8 @@
     "adminChatPlaceholder": "Message admin...",
     "adminLabel": "Admin",
     "youLabel": "You",
-    "newMessage": "New"
+    "newMessage": "New",
+    "chatUnreadBanner": "You have {count} new message(s) from admin — open chat"
   },
   "admin": {
     "title": "Admin panel",
@@ -172,7 +173,8 @@
     "navCreateOrder": "New request",
     "navCities": "Cities",
     "navMasters": "Chat",
-    "newMessage": "New"
+    "newMessage": "New",
+    "chatUnreadBanner": "You have {count} new message(s) in technician chat — open chat"
   },
   "orderStatus": {
     "CREATED": "Created",

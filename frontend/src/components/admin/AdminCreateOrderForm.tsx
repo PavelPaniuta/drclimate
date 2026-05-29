@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { api } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { CitySelect } from '@/components/CitySelect';
-import { AdminNav } from './AdminNav';
+import { AdminPageShell } from './AdminPageShell';
 
 const SERVICE_TYPES = ['AC_INSTALLATION', 'AC_REPAIR', 'AC_MAINTENANCE'] as const;
 
@@ -66,11 +66,7 @@ export function AdminCreateOrderForm() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-8">
-      <h1 className="mb-2 text-xl font-bold sm:text-2xl">{t('createOrder')}</h1>
-      <p className="mb-4 text-sm text-slate-500">{t('createOrderHint')}</p>
-      <AdminNav />
-
+    <AdminPageShell title={t('createOrder')} subtitle={t('createOrderHint')} maxWidth="2xl">
       <form onSubmit={handleSubmit} className="card space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium">{t('selectClient')}</label>
@@ -148,6 +144,6 @@ export function AdminCreateOrderForm() {
           </button>
         </div>
       </form>
-    </div>
+    </AdminPageShell>
   );
 }

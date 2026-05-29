@@ -52,7 +52,7 @@ export default function MasterDashboard() {
   const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
-  const { count: chatUnread, refresh: refreshChatUnread } = useMasterChatUnread(true);
+  const { count: chatUnread, refresh: refreshChatUnread } = useMasterChatUnread(true, chatOpen);
 
   const loadData = useCallback(async () => {
     const token = getToken();
@@ -195,9 +195,25 @@ export default function MasterDashboard() {
         </div>
       </div>
 
+      {chatUnread > 0 && !chatOpen && (
+        <button
+          type="button"
+          onClick={() => setChatOpen(true)}
+          className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-800 transition hover:bg-red-100"
+        >
+          <span>{t('chatUnreadBanner', { count: chatUnread })}</span>
+          <span className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-red-500 px-2 text-xs font-bold text-white">
+            {chatUnread > 99 ? '99+' : chatUnread}
+          </span>
+        </button>
+      )}
+
       <MasterAdminChat
         open={chatOpen}
-        onClose={() => setChatOpen(false)}
+        onClose={() => {
+          setChatOpen(false);
+          void refreshChatUnread();
+        }}
         onUnreadChange={refreshChatUnread}
       />
 

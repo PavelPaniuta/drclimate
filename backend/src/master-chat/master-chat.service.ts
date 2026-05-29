@@ -72,6 +72,7 @@ export class MasterChatService {
       where: { id: thread.id },
       data: { adminLastReadAt: new Date() },
     });
+    void this.events.emitChatUnread(masterId);
     return { ok: true };
   }
 
@@ -81,6 +82,7 @@ export class MasterChatService {
       where: { id: thread.id },
       data: { masterLastReadAt: new Date() },
     });
+    void this.events.emitChatUnread(masterId);
     return { ok: true };
   }
 

@@ -6,7 +6,7 @@ import clsx from 'clsx';
 import { api } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { City } from '@/lib/cities';
-import { AdminNav } from './AdminNav';
+import { AdminPageShell } from './AdminPageShell';
 
 export function AdminCitiesManager() {
   const t = useTranslations('admin');
@@ -69,11 +69,7 @@ export function AdminCitiesManager() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
-      <h1 className="mb-2 text-xl font-bold sm:text-2xl">{t('addCity')}</h1>
-      <p className="mb-4 text-sm text-slate-500">{t('addCityHint')}</p>
-      <AdminNav />
-
+    <AdminPageShell title={t('addCity')} subtitle={t('addCityHint')} maxWidth="4xl">
       <div className="card mb-6">
         <h2 className="mb-4 text-lg font-semibold">{t('addCityBtn')}</h2>
         <form onSubmit={addCity} className="grid gap-3 sm:grid-cols-2">
@@ -160,6 +156,6 @@ export function AdminCitiesManager() {
           );
         })}
       </div>
-    </div>
+    </AdminPageShell>
   );
 }

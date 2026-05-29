@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import clsx from 'clsx';
-import { useAdminChatUnread } from '@/hooks/useAdminChatUnread';
+import { useAdminChatUnread } from '@/contexts/AdminChatUnreadContext';
 
 export function AdminNav() {
   const t = useTranslations('admin');
