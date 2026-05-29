@@ -8,6 +8,7 @@ import { getToken } from '@/lib/auth';
 import { getCityName, findCityBySlug, City } from '@/lib/cities';
 import { MasterChatMessage, MasterListItem } from '@/lib/types';
 import { getSocket } from '@/lib/socket';
+import { appendChatMessage, parseMasterChatPayload } from '@/lib/chat-messages';
 
 type Props = {
   cities: City[];
@@ -46,9 +47,9 @@ export function AdminMastersPanel({ cities }: Props) {
     const socket = getSocket(token);
     const onChat = (payload: { masterId?: string; message?: MasterChatMessage } | MasterChatMessage) => {
       const masterId = 'masterId' in payload && payload.masterId ? payload.masterId : selectedId;
-      const message = 'message' in payload && payload.message ? payload.message : (payload as MasterChatMessage);
-      if (masterId === selectedId && message?.id) {
-        setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
+      const message = parseMasterChatPayload(payload);
+      if (masterId === selectedId && message) {
+        setMessages((prev) => appendChatMessage(prev, message));
       }
       void loadMasters();
     };
@@ -73,7 +74,7 @@ export function AdminMastersPanel({ cities }: Props) {
       { method: 'POST', body: JSON.stringify({ content }) },
       token,
     );
-    setMessages((prev) => [...prev, msg]);
+    setMessages((prev) => appendChatMessage(prev, msg));
     setContent('');
   }
 

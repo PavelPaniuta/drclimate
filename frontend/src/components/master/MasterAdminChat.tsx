@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import { MasterChatMessage } from '@/lib/types';
 import { getSocket } from '@/lib/socket';
+import { appendChatMessage, parseMasterChatPayload } from '@/lib/chat-messages';
 
 export function MasterAdminChat() {
   const t = useTranslations('master');
@@ -30,10 +31,8 @@ export function MasterAdminChat() {
 
     const socket = getSocket(token);
     const onChat = (payload: MasterChatMessage | { message?: MasterChatMessage }) => {
-      const msg = 'message' in payload && payload.message ? payload.message : (payload as MasterChatMessage);
-      if (msg?.id) {
-        setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
-      }
+      const msg = parseMasterChatPayload(payload);
+      if (msg) setMessages((prev) => appendChatMessage(prev, msg));
     };
     socket.on('master_chat_message', onChat);
     return () => {
@@ -51,7 +50,7 @@ export function MasterAdminChat() {
       { method: 'POST', body: JSON.stringify({ content }) },
       token,
     );
-    setMessages((prev) => [...prev, msg]);
+    setMessages((prev) => appendChatMessage(prev, msg));
     setContent('');
   }
 
